@@ -1,0 +1,8 @@
+node_modules
+data
+web/dist
+web/dist-demo
+server/dist
+bridge/dist
+.git
+docs/images
