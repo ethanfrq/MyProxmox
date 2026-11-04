@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 3 | 188 | 12 | 3 (lecture sauvegardes), 6 |
+| [Datacenter](#datacenter) | 203 | 6 | 185 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 6 | 45 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 21 | 130 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 15 | 75 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 15 | 41 | 6 | 4 |
+| [Nœud](#nœud) | 173 | 26 | 125 | 22 | 3 (lecture), 5 |
+| [VM QEMU](#vm-qemu) | 97 | 20 | 70 | 7 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 18 | 38 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 5 | 26 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 12 | 30 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 0 | 7 | 0 | 6 |
-| **Total** | **680** | **77** | **542** | **61** | |
+| **Total** | **680** | **93** | **526** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 3 faits, 188 à faire, 12 hors périmètre.
+203 points d'entrée : 6 faits, 185 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -142,17 +142,17 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/mapping` | List resource types. | tout utilisateur connecté | Hors périmètre |
-| GET | `/cluster/mapping/dir` | List directory mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/dir/<id>'. | À faire |
+| GET | `/cluster/mapping/dir` | List directory mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/dir/<id>'. | Fait |
 | POST | `/cluster/mapping/dir` | Create a new directory mapping. | Mapping.Modify sur /mapping/dir | À faire |
 | GET | `/cluster/mapping/dir/{id}` | Get directory mapping. | Mapping.Use sur /mapping/dir/{id} ou Mapping.Modify sur /mapping/dir/{id} ou Mapping.Audit sur /mapping/dir/{id} | À faire |
 | PUT | `/cluster/mapping/dir/{id}` | Update a directory mapping. | Mapping.Modify sur /mapping/dir/{id} | À faire |
 | DELETE | `/cluster/mapping/dir/{id}` | Remove directory mapping. | Mapping.Modify sur /mapping/dir | À faire |
-| GET | `/cluster/mapping/pci` | List PCI Hardware Mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/pci/<id>'. | À faire |
+| GET | `/cluster/mapping/pci` | List PCI Hardware Mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/pci/<id>'. | Fait |
 | POST | `/cluster/mapping/pci` | Create a new hardware mapping. | Mapping.Modify sur /mapping/pci | À faire |
 | GET | `/cluster/mapping/pci/{id}` | Get PCI Mapping. | Mapping.Use sur /mapping/pci/{id} ou Mapping.Modify sur /mapping/pci/{id} ou Mapping.Audit sur /mapping/pci/{id} | À faire |
 | PUT | `/cluster/mapping/pci/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/pci/{id} | À faire |
 | DELETE | `/cluster/mapping/pci/{id}` | Remove Hardware Mapping. | Mapping.Modify sur /mapping/pci | À faire |
-| GET | `/cluster/mapping/usb` | List USB Hardware Mappings | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/usb/<id>'. | À faire |
+| GET | `/cluster/mapping/usb` | List USB Hardware Mappings | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/usb/<id>'. | Fait |
 | POST | `/cluster/mapping/usb` | Create a new hardware mapping. | Mapping.Modify sur /mapping/usb | À faire |
 | GET | `/cluster/mapping/usb/{id}` | Get USB Mapping. | Mapping.Audit sur /mapping/usb/{id} ou Mapping.Use sur /mapping/usb/{id} ou Mapping.Modify sur /mapping/usb/{id} | À faire |
 | PUT | `/cluster/mapping/usb/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/usb/{id} | À faire |
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 21 faits, 130 à faire, 22 hors périmètre.
+173 points d'entrée : 26 faits, 125 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -470,9 +470,9 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/nodes/{node}/capabilities` | Node capabilities index. | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/capabilities/qemu` | QEMU capabilities index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/capabilities/qemu/cpu` | List all custom and default CPU models. | Custom models are filtered to those the current user has any of Mapping.{Audit,Use,Modify} on /mapping/cpu/<name>; Sys.Audit on /nodes continues to grant visib… | À faire |
+| GET | `/nodes/{node}/capabilities/qemu/cpu` | List all custom and default CPU models. | Custom models are filtered to those the current user has any of Mapping.{Audit,Use,Modify} on /mapping/cpu/<name>; Sys.Audit on /nodes continues to grant visib… | Fait |
 | GET | `/nodes/{node}/capabilities/qemu/cpu-flags` | List of available VM-specific CPU flags. Returns an empty list for 'aarch64' as no VM-specific flags are defined for it yet. | tout utilisateur connecté | À faire |
-| GET | `/nodes/{node}/capabilities/qemu/machines` | Get available QEMU/KVM machine types. | tout utilisateur connecté | À faire |
+| GET | `/nodes/{node}/capabilities/qemu/machines` | Get available QEMU/KVM machine types. | tout utilisateur connecté | Fait |
 | GET | `/nodes/{node}/capabilities/qemu/migration` | Get node-specific QEMU migration capabilities of the node. Requires the 'Sys.Audit' permission on '/nodes/<node>'. | Sys.Audit sur /nodes/{node} | À faire |
 
 ### Nœud : ceph
@@ -598,10 +598,10 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/hardware` | Index of hardware types | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/hardware/pci` | List local PCI devices. | Sys.Audit ou Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/hardware/pci` | List local PCI devices. | Sys.Audit ou Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/hardware/pci/{pci-id-or-mapping}` | Index of available pci methods | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/hardware/pci/{pci-id-or-mapping}/mdev` | List mediated device types for given PCI device. | Sys.Audit ou Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/hardware/usb` | List local USB devices. | Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/hardware/usb` | List local USB devices. | Sys.Modify sur / | Fait |
 
 ### Nœud : hosts
 
@@ -759,7 +759,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/tasks` | Read task list for one node (finished tasks). | List task associated with the current user, or all task the user has 'Sys.Audit' permissions on /nodes/<node> (the <node> the task runs on). | À faire |
+| GET | `/nodes/{node}/tasks` | Read task list for one node (finished tasks). | List task associated with the current user, or all task the user has 'Sys.Audit' permissions on /nodes/<node> (the <node> the task runs on). | Fait |
 | GET | `/nodes/{node}/tasks/{upid}` | (sans description) | tout utilisateur connecté | Hors périmètre |
 | DELETE | `/nodes/{node}/tasks/{upid}` | Stop a task. | The user needs 'Sys.Modify' permissions on '/nodes/<node>' if they aren't the owner of the task. | À faire |
 | GET | `/nodes/{node}/tasks/{upid}/log` | Read task log. | The user needs 'Sys.Audit' permissions on '/nodes/<node>' if they aren't the owner of the task. | Fait |
@@ -812,7 +812,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 15 faits, 75 à faire, 7 hors périmètre.
+97 points d'entrée : 20 faits, 70 à faire, 7 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -866,8 +866,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/qemu/{vmid}/cloudinit` | Get the cloudinit configuration with both current and pending values. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/qemu/{vmid}/cloudinit` | Regenerate and change cloudinit config drive. | VM.Config.Cloudinit sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/cloudinit/dump` | Get automatically generated cloudinit config. | VM.Audit sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/cloudinit` | Regenerate and change cloudinit config drive. | VM.Config.Cloudinit sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/cloudinit/dump` | Get automatically generated cloudinit config. | VM.Audit sur /vms/{vmid} | Fait |
 
 ### VM QEMU : config
 
@@ -934,7 +934,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/move_disk` | Move volume to different storage or to a different VM. | VM.Config.Disk sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/move_disk` | Move volume to different storage or to a different VM. | VM.Config.Disk sur /vms/{vmid} | Fait |
 
 ### VM QEMU : mtunnel
 
@@ -952,7 +952,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/qemu/{vmid}/pending` | Get the virtual machine configuration with both current and pending values. | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/pending` | Get the virtual machine configuration with both current and pending values. | VM.Audit sur /vms/{vmid} | Fait |
 
 ### VM QEMU : remote_migrate
 
@@ -964,7 +964,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| PUT | `/nodes/{node}/qemu/{vmid}/resize` | Extend volume size. | VM.Config.Disk sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/resize` | Extend volume size. | VM.Config.Disk sur /vms/{vmid} | Fait |
 
 ### VM QEMU : rrd
 
@@ -1048,7 +1048,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Conteneur LXC
 
-62 points d'entrée : 15 faits, 41 à faire, 6 hors périmètre.
+62 points d'entrée : 18 faits, 38 à faire, 6 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1123,7 +1123,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/lxc/{vmid}/move_volume` | Move a rootfs-/mp-volume to a different storage or to a different container. | VM.Config.Disk sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/move_volume` | Move a rootfs-/mp-volume to a different storage or to a different container. | VM.Config.Disk sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : mtunnel
 
@@ -1141,7 +1141,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/lxc/{vmid}/pending` | Get container configuration, including pending changes. | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/pending` | Get container configuration, including pending changes. | VM.Audit sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : remote_migrate
 
@@ -1153,7 +1153,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| PUT | `/nodes/{node}/lxc/{vmid}/resize` | Resize a container mount point. | VM.Config.Disk sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/lxc/{vmid}/resize` | Resize a container mount point. | VM.Config.Disk sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : rrd
 

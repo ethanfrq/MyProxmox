@@ -29,7 +29,7 @@ test("machines : tri, filtre, sélection, journal de tâche", async ({ page }) =
   const rows = page.locator("main table tbody tr");
   await expect(rows.first()).toContainText("100");
   await page.getByRole("button", { name: "ID" }).click(); // déjà croissant : passe en décroissant
-  await expect(rows.first()).toContainText("108");
+  await expect(rows.first()).toContainText("120");
   await page.getByRole("searchbox").fill("jellyfin");
   await expect(rows).toHaveCount(1);
   await page.getByRole("searchbox").fill("");

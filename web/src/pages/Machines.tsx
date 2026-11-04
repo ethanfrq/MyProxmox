@@ -81,6 +81,7 @@ export function Machines() {
       ),
     },
     { id: "status", header: "Statut", cell: (g) => <Status status={g.status} />, sort: (g) => g.status },
+    { id: "node", header: "Nœud", className: "mono small", hidden: new Set(all.map((g) => g.node)).size < 2, sort: (g) => g.node, cell: (g) => g.node },
     {
       id: "ip", header: "Adresse IP", className: "ip", text: (g) => (byId.get(g.vmid)?.ips ?? []).join(" "), sort: (g) => byId.get(g.vmid)?.ips?.[0] ?? "",
       cell: (g) => {

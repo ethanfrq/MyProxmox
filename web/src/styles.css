@@ -586,3 +586,22 @@ a.user-chip:hover { color: var(--panel); }
 .mon-stores .mon-label { flex-wrap: wrap; }
 .mon-stores .mon-label strong { white-space: nowrap; }
 .mon-stores .mon-label > span:last-child { margin-left: 0 !important; width: 100%; }
+
+/* ── Fiche machine (v2) ───────────────────────────────────── */
+.hw-table td { vertical-align: top; }
+.hw-table td:first-child { padding-top: 12px; }
+.link-btn { border: 0; background: transparent; padding: 0; font: inherit; color: var(--orange); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.link-btn:focus-visible { outline: 2px solid var(--orange); }
+.order-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.order-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--line-2); }
+.md { line-height: 1.6; }
+.md p, .md ul, .md ol, .md blockquote { margin: 0 0 10px; }
+.md ul, .md ol { padding-left: 22px; }
+.md-h { font-weight: 700; margin: 12px 0 6px; }
+.md-h1 { font-size: 18px; } .md-h2 { font-size: 16px; } .md-h3, .md-h4 { font-size: 14px; }
+.md code { background: var(--line-2); padding: 1px 4px; }
+.md pre.code { margin: 0 0 10px; }
+.md blockquote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--ink-2); }
+.md a { color: var(--orange); text-decoration: underline; }
+.md hr { border: 0; border-top: 1px solid var(--line); }
+.md-preview { border: 1px solid var(--line-2); padding: 10px 14px; overflow: auto; max-height: 300px; }

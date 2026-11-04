@@ -52,6 +52,7 @@ const ALIAS_VALUES = {
 // Préfixes stockés dans une variable avant d'être utilisés.
 const PREFIXES = {
   base: "/nodes/${node}/${type}/${vmid}",
+  "ctx.base": "/nodes/${node}/${type}/${vmid}",
   b: "/nodes/${node}",
 };
 
@@ -223,7 +224,7 @@ function walkFiles(dir, acc = []) {
     if (name === "node_modules" || name.startsWith("dist")) continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) walkFiles(full, acc);
-    else if (/\.(ts|tsx|mjs|js)$/.test(name) && name !== "mock.ts") acc.push(full);
+    else if (/\.(ts|tsx|mjs|js)$/.test(name) && !name.startsWith("mock")) acc.push(full); // le faux Proxmox ne compte pas
   }
   return acc;
 }
@@ -238,6 +239,8 @@ function findCalls() {
     [/pve\.(get|post|put|del)(?:<[^>()]*>)?\(\s*(`[^`]*`|"[^"]*"|base\b)/g, (m) => [METHOD_OF[m[1]], m[2]]],
     // call("GET", "/x")
     [/\bcall\(\s*"(GET|POST|PUT|DELETE)",\s*(`[^`]*`|"[^"]*")/g, (m) => [m[1], m[2]]],
+    // Chemin construit à la main (relais WebSocket...) : commentaire « // api: GET /nodes/{node}/... »
+    [/\/\/ api: (GET|POST|PUT|DELETE) (\/\S+)/g, (m) => [m[1], `"${m[2].replace(/\{(\w+)\}/g, "${$1}")}"`]],
     // request(cible, "GET", "/x")
     [/\brequest\([^;\n]*?"(GET|POST|PUT|DELETE)",\s*(`[^`]*`|"[^"]*")/g, (m) => [m[1], m[2]]],
   ];
