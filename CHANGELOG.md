@@ -9,6 +9,7 @@
 - Machines et conteneurs à parité avec Proxmox : matériel complet, Cloud-Init, options, ordre de boot, historique, notes en Markdown, snapshots en arbre, sauvegardes avec toutes les options, restauration avec options, restauration de fichiers depuis Proxmox Backup Server, réplication, migration, clonage, modèles, pare-feu, permissions, agent invité
 - Console intégrée : noVNC pour les VM, xterm.js pour les conteneurs, relais WebSocket authentifié `/api/console`
 - Nœud à parité avec Proxmox : alimentation avec double confirmation, tout démarrer / arrêter / migrer, shell intégré, réseau (ponts, bonds, VLAN, OVS) avec diff de /etc/network/interfaces avant application, DNS, hosts, fuseau, certificats personnalisés et ACME (comptes, plugins DNS), mises à jour et dépôts APT, disques (SMART, GPT, effacement, LVM, LVM-thin, répertoires, assistant ZFS), Ceph, services, journal en direct, tâches, abonnement, pare-feu
+- Datacenter à parité avec Proxmox : cluster (création, jonction), options, stockages de tous types avec recherche des partages, sauvegardes planifiées complètes, réplication, permissions (utilisateurs, groupes, pools, rôles personnalisés, ACL en arbre, domaines, 2FA, jetons), haute disponibilité, SDN, ACME, métriques, notifications, mappings, pare-feu et groupes de sécurité
 - Assistants de création complets (VM et conteneur), création depuis un modèle, mode simple conservé
 - Actions groupées : redémarrage, sauvegarde, migration, ajout et retrait de tags
 - Tests de bout en bout Playwright en mode démo

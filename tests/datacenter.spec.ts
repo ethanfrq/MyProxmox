@@ -206,3 +206,53 @@ test("permissions : utilisateur, rôle personnalisé, ACL, jeton, 2FA, pool", as
   await expect(page.getByText("Membres enregistrés")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("haute disponibilité : groupe, ressource, état", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "ha");
+  await expect(page.locator("main")).toContainText("vm:101");
+  await page.getByRole("tab", { name: "Groupes" }).click();
+  await page.getByRole("button", { name: "Créer un groupe" }).click();
+  const g = uniq("ha");
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(g);
+  await page.getByRole("dialog").getByLabel("Nœuds et priorités").fill("pve2:2,pve:1");
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await page.getByRole("tab", { name: "Ressources" }).click();
+  await page.getByRole("button", { name: "Ajouter une machine" }).click();
+  await page.getByRole("dialog").getByLabel("Machine").selectOption({ label: "102 jellyfin" });
+  await page.getByRole("dialog").getByLabel("Groupe").selectOption(g);
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("tr", { hasText: "ct:102" })).toContainText(g);
+  await page.locator("tr", { hasText: "ct:102" }).getByRole("button", { name: "Supprimer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Supprimer" }).click();
+  expect(errors).toEqual([]);
+});
+
+test("SDN : zone, VNet, sous-réseau, appliquer", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "sdn");
+  const z = `z${Date.now() % 10000}`;
+  await page.getByRole("button", { name: "Ajouter une zone" }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(z);
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("Des changements SDN ne sont pas encore appliqués")).toBeVisible();
+  await page.getByRole("tab", { name: "VNets et sous-réseaux" }).click();
+  await page.getByRole("button", { name: "Ajouter un VNet" }).click();
+  const n = `v${Date.now() % 10000}`;
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(n);
+  await page.getByRole("dialog").getByLabel("Zone").selectOption(z);
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await page.locator("tr", { hasText: n }).getByRole("button", { name: "Sous-réseaux" }).click();
+  await page.getByRole("button", { name: "Ajouter un sous-réseau" }).click();
+  await page.getByRole("dialog").getByLabel("Réseau").fill("10.20.0.0/24");
+  await page.getByRole("dialog").getByLabel("Passerelle").fill("10.20.0.1");
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("main")).toContainText("10.20.0.0/24");
+  await page.getByRole("button", { name: "Appliquer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Appliquer sur tous les nœuds" }).click();
+  await expect(page.getByText("Application du SDN : terminé")).toBeVisible();
+  await expect(page.getByText("Des changements SDN ne sont pas encore appliqués")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

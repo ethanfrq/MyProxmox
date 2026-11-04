@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 80 | 111 | 12 | 3 (lecture sauvegardes), 6 |
-| [Cluster](#cluster) | 60 | 15 | 36 | 9 | 3 (quorum, HA, tâches), 6 |
+| [Datacenter](#datacenter) | 203 | 106 | 85 | 12 | 3 (lecture sauvegardes), 6 |
+| [Cluster](#cluster) | 60 | 29 | 22 | 9 | 3 (quorum, HA, tâches), 6 |
 | [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 18 | 13 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 28 | 14 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 5 | 2 | 0 | 6 |
-| **Total** | **680** | **342** | **277** | **61** | |
+| **Total** | **680** | **382** | **237** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 80 faits, 111 à faire, 12 hors périmètre.
+203 points d'entrée : 106 faits, 85 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -230,17 +230,17 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/sdn` | Directory index. | SDN.Audit sur /sdn | Hors périmètre |
-| PUT | `/cluster/sdn` | Apply sdn controller changes && reload. | SDN.Allocate sur /sdn | À faire |
-| GET | `/cluster/sdn/controllers` | SDN controllers index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/controllers/<controller>' | À faire |
-| POST | `/cluster/sdn/controllers` | Create a new sdn controller object. | SDN.Allocate sur /sdn/controllers | À faire |
+| PUT | `/cluster/sdn` | Apply sdn controller changes && reload. | SDN.Allocate sur /sdn | Fait |
+| GET | `/cluster/sdn/controllers` | SDN controllers index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/controllers/<controller>' | Fait |
+| POST | `/cluster/sdn/controllers` | Create a new sdn controller object. | SDN.Allocate sur /sdn/controllers | Fait |
 | GET | `/cluster/sdn/controllers/{controller}` | Read sdn controller configuration. | SDN.Allocate sur /sdn/controllers/{controller} | À faire |
-| PUT | `/cluster/sdn/controllers/{controller}` | Update sdn controller object configuration. | SDN.Allocate sur /sdn/controllers | À faire |
-| DELETE | `/cluster/sdn/controllers/{controller}` | Delete sdn controller object configuration. | SDN.Allocate sur /sdn/controllers | À faire |
-| GET | `/cluster/sdn/dns` | SDN dns index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/dns/<dns>' | À faire |
-| POST | `/cluster/sdn/dns` | Create a new sdn dns object. | SDN.Allocate sur /sdn/dns | À faire |
+| PUT | `/cluster/sdn/controllers/{controller}` | Update sdn controller object configuration. | SDN.Allocate sur /sdn/controllers | Fait |
+| DELETE | `/cluster/sdn/controllers/{controller}` | Delete sdn controller object configuration. | SDN.Allocate sur /sdn/controllers | Fait |
+| GET | `/cluster/sdn/dns` | SDN dns index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/dns/<dns>' | Fait |
+| POST | `/cluster/sdn/dns` | Create a new sdn dns object. | SDN.Allocate sur /sdn/dns | Fait |
 | GET | `/cluster/sdn/dns/{dns}` | Read sdn dns configuration. | SDN.Allocate sur /sdn/dns/{dns} | À faire |
-| PUT | `/cluster/sdn/dns/{dns}` | Update sdn dns object configuration. | SDN.Allocate sur /sdn/dns | À faire |
-| DELETE | `/cluster/sdn/dns/{dns}` | Delete sdn dns object configuration. | SDN.Allocate sur /sdn/dns | À faire |
+| PUT | `/cluster/sdn/dns/{dns}` | Update sdn dns object configuration. | SDN.Allocate sur /sdn/dns | Fait |
+| DELETE | `/cluster/sdn/dns/{dns}` | Delete sdn dns object configuration. | SDN.Allocate sur /sdn/dns | Fait |
 | GET | `/cluster/sdn/dry-run` | Dry-run the SDN apply action and return the difference between the current configuration and the pending configuration | Sys.Audit sur /nodes/{node} | À faire |
 | GET | `/cluster/sdn/fabrics` | SDN Fabrics Index | SDN.Audit sur /sdn/fabrics | Hors périmètre |
 | GET | `/cluster/sdn/fabrics/all` | SDN Fabrics Index | Only list fabrics where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/fabrics/<fabric>', only list nodes where you have 'Sys.Audit' or 'Sys.Modif… | À faire |
@@ -255,11 +255,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/cluster/sdn/fabrics/node/{fabric_id}/{node_id}` | Get a node | SDN.Audit ou SDN.Allocate sur /sdn/fabrics/{fabric_id} et Sys.Audit ou Sys.Modify sur /nodes/{node_id} | À faire |
 | PUT | `/cluster/sdn/fabrics/node/{fabric_id}/{node_id}` | Update a node | SDN.Allocate sur /sdn/fabrics/{fabric_id} et Sys.Modify sur /nodes/{node_id} | À faire |
 | DELETE | `/cluster/sdn/fabrics/node/{fabric_id}/{node_id}` | Add a node | SDN.Allocate sur /sdn/fabrics/{fabric_id} et Sys.Modify sur /nodes/{node_id} | À faire |
-| GET | `/cluster/sdn/ipams` | SDN ipams index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/ipams/<ipam>' | À faire |
-| POST | `/cluster/sdn/ipams` | Create a new sdn ipam object. | SDN.Allocate sur /sdn/ipams | À faire |
+| GET | `/cluster/sdn/ipams` | SDN ipams index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/ipams/<ipam>' | Fait |
+| POST | `/cluster/sdn/ipams` | Create a new sdn ipam object. | SDN.Allocate sur /sdn/ipams | Fait |
 | GET | `/cluster/sdn/ipams/{ipam}` | Read sdn ipam configuration. | SDN.Allocate sur /sdn/ipams/{ipam} | À faire |
-| PUT | `/cluster/sdn/ipams/{ipam}` | Update sdn ipam object configuration. | SDN.Allocate sur /sdn/ipams | À faire |
-| DELETE | `/cluster/sdn/ipams/{ipam}` | Delete sdn ipam object configuration. | SDN.Allocate sur /sdn/ipams | À faire |
+| PUT | `/cluster/sdn/ipams/{ipam}` | Update sdn ipam object configuration. | SDN.Allocate sur /sdn/ipams | Fait |
+| DELETE | `/cluster/sdn/ipams/{ipam}` | Delete sdn ipam object configuration. | SDN.Allocate sur /sdn/ipams | Fait |
 | GET | `/cluster/sdn/ipams/{ipam}/status` | List PVE IPAM Entries | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
 | POST | `/cluster/sdn/lock` | Acquire global lock for SDN configuration | SDN.Allocate sur /sdn | À faire |
 | DELETE | `/cluster/sdn/lock` | Release global lock for SDN configuration | SDN.Allocate sur /sdn | À faire |
@@ -281,11 +281,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/cluster/sdn/route-maps/entries/{route-map-id}/entry/{order}` | Get Route Map Entry | SDN.Audit ou SDN.Allocate sur /sdn/route-maps/{route-map-id} | À faire |
 | PUT | `/cluster/sdn/route-maps/entries/{route-map-id}/entry/{order}` | Update Route Map Entry | SDN.Allocate sur /sdn/route-maps/{route-map-id} | À faire |
 | DELETE | `/cluster/sdn/route-maps/entries/{route-map-id}/entry/{order}` | Delete Route Map Entry | SDN.Allocate sur /sdn/route-maps/{route-map-id} | À faire |
-| GET | `/cluster/sdn/vnets` | SDN vnets index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
-| POST | `/cluster/sdn/vnets` | Create a new sdn vnet object. | SDN.Allocate sur /sdn/zones/{zone} | À faire |
+| GET | `/cluster/sdn/vnets` | SDN vnets index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | Fait |
+| POST | `/cluster/sdn/vnets` | Create a new sdn vnet object. | SDN.Allocate sur /sdn/zones/{zone} | Fait |
 | GET | `/cluster/sdn/vnets/{vnet}` | Read sdn vnet configuration. | Require 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
-| PUT | `/cluster/sdn/vnets/{vnet}` | Update sdn vnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | À faire |
-| DELETE | `/cluster/sdn/vnets/{vnet}` | Delete sdn vnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | À faire |
+| PUT | `/cluster/sdn/vnets/{vnet}` | Update sdn vnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | Fait |
+| DELETE | `/cluster/sdn/vnets/{vnet}` | Delete sdn vnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | Fait |
 | GET | `/cluster/sdn/vnets/{vnet}/firewall` | Directory index. | non précisée | Hors périmètre |
 | GET | `/cluster/sdn/vnets/{vnet}/firewall/options` | Get vnet firewall options. | Needs SDN.Audit or SDN.Allocate permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
 | PUT | `/cluster/sdn/vnets/{vnet}/firewall/options` | Set Firewall options. | Needs SDN.Allocate permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
@@ -297,26 +297,26 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | POST | `/cluster/sdn/vnets/{vnet}/ips` | Create IP Mapping in a VNet | SDN.Allocate sur /sdn/zones/{zone}/{vnet} | À faire |
 | PUT | `/cluster/sdn/vnets/{vnet}/ips` | Update IP Mapping in a VNet | SDN.Allocate sur /sdn/zones/{zone}/{vnet} | À faire |
 | DELETE | `/cluster/sdn/vnets/{vnet}/ips` | Delete IP Mappings in a VNet | SDN.Allocate sur /sdn/zones/{zone}/{vnet} | À faire |
-| GET | `/cluster/sdn/vnets/{vnet}/subnets` | SDN subnets index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
-| POST | `/cluster/sdn/vnets/{vnet}/subnets` | Create a new sdn subnet object. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | À faire |
+| GET | `/cluster/sdn/vnets/{vnet}/subnets` | SDN subnets index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | Fait |
+| POST | `/cluster/sdn/vnets/{vnet}/subnets` | Create a new sdn subnet object. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | Fait |
 | GET | `/cluster/sdn/vnets/{vnet}/subnets/{subnet}` | Read sdn subnet configuration. | Require 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>' | À faire |
-| PUT | `/cluster/sdn/vnets/{vnet}/subnets/{subnet}` | Update sdn subnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | À faire |
-| DELETE | `/cluster/sdn/vnets/{vnet}/subnets/{subnet}` | Delete sdn subnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | À faire |
-| GET | `/cluster/sdn/zones` | SDN zones index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>' | À faire |
-| POST | `/cluster/sdn/zones` | Create a new sdn zone object. | SDN.Allocate sur /sdn/zones | À faire |
+| PUT | `/cluster/sdn/vnets/{vnet}/subnets/{subnet}` | Update sdn subnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | Fait |
+| DELETE | `/cluster/sdn/vnets/{vnet}/subnets/{subnet}` | Delete sdn subnet object configuration. | Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>' | Fait |
+| GET | `/cluster/sdn/zones` | SDN zones index. | Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>' | Fait |
+| POST | `/cluster/sdn/zones` | Create a new sdn zone object. | SDN.Allocate sur /sdn/zones | Fait |
 | GET | `/cluster/sdn/zones/{zone}` | Read sdn zone configuration. | SDN.Allocate sur /sdn/zones/{zone} | À faire |
-| PUT | `/cluster/sdn/zones/{zone}` | Update sdn zone object configuration. | SDN.Allocate sur /sdn/zones/{zone} | À faire |
-| DELETE | `/cluster/sdn/zones/{zone}` | Delete sdn zone object configuration. | SDN.Allocate sur /sdn/zones/{zone} | À faire |
+| PUT | `/cluster/sdn/zones/{zone}` | Update sdn zone object configuration. | SDN.Allocate sur /sdn/zones/{zone} | Fait |
+| DELETE | `/cluster/sdn/zones/{zone}` | Delete sdn zone object configuration. | SDN.Allocate sur /sdn/zones/{zone} | Fait |
 
 ### Datacenter : version
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/version` | API version details, including some parts of the global datacenter config. | tout utilisateur connecté | À faire |
+| GET | `/version` | API version details, including some parts of the global datacenter config. | tout utilisateur connecté | Fait |
 
 ## Cluster
 
-60 points d'entrée : 15 faits, 36 à faire, 9 hors périmètre.
+60 points d'entrée : 29 faits, 22 à faire, 9 hors périmètre.
 
 ### Cluster : (racine)
 
@@ -370,28 +370,28 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/ha` | Directory index. | Sys.Audit sur / | Hors périmètre |
-| GET | `/cluster/ha/groups` | Get HA groups. (deprecated in favor of HA rules) | Sys.Audit sur / | À faire |
-| POST | `/cluster/ha/groups` | Create a new HA group. (deprecated in favor of HA rules) | Sys.Console sur / | À faire |
+| GET | `/cluster/ha/groups` | Get HA groups. (deprecated in favor of HA rules) | Sys.Audit sur / | Fait |
+| POST | `/cluster/ha/groups` | Create a new HA group. (deprecated in favor of HA rules) | Sys.Console sur / | Fait |
 | GET | `/cluster/ha/groups/{group}` | Read ha group configuration. (deprecated in favor of HA rules) | Sys.Audit sur / | À faire |
-| PUT | `/cluster/ha/groups/{group}` | Update ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | À faire |
-| DELETE | `/cluster/ha/groups/{group}` | Delete ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | À faire |
+| PUT | `/cluster/ha/groups/{group}` | Update ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | Fait |
+| DELETE | `/cluster/ha/groups/{group}` | Delete ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | Fait |
 | GET | `/cluster/ha/resources` | List HA resources. | Sys.Audit sur / | Fait |
-| POST | `/cluster/ha/resources` | Create a new HA resource. | Sys.Console sur / | À faire |
+| POST | `/cluster/ha/resources` | Create a new HA resource. | Sys.Console sur / | Fait |
 | GET | `/cluster/ha/resources/{sid}` | Read resource configuration. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/ha/resources/{sid}` | Update resource configuration. | Sys.Console sur / | À faire |
-| DELETE | `/cluster/ha/resources/{sid}` | Delete resource configuration. | Sys.Console sur / | À faire |
-| POST | `/cluster/ha/resources/{sid}/migrate` | Request resource migration (online) to another node. | Sys.Console sur / | À faire |
-| POST | `/cluster/ha/resources/{sid}/relocate` | Request resource relocation to another node. This stops the service on the old node, and restarts it on the target node. | Sys.Console sur / | À faire |
-| GET | `/cluster/ha/rules` | Get HA rules. | Sys.Audit sur / | À faire |
-| POST | `/cluster/ha/rules` | Create HA rule. | Sys.Console sur / | À faire |
+| PUT | `/cluster/ha/resources/{sid}` | Update resource configuration. | Sys.Console sur / | Fait |
+| DELETE | `/cluster/ha/resources/{sid}` | Delete resource configuration. | Sys.Console sur / | Fait |
+| POST | `/cluster/ha/resources/{sid}/migrate` | Request resource migration (online) to another node. | Sys.Console sur / | Fait |
+| POST | `/cluster/ha/resources/{sid}/relocate` | Request resource relocation to another node. This stops the service on the old node, and restarts it on the target node. | Sys.Console sur / | Fait |
+| GET | `/cluster/ha/rules` | Get HA rules. | Sys.Audit sur / | Fait |
+| POST | `/cluster/ha/rules` | Create HA rule. | Sys.Console sur / | Fait |
 | GET | `/cluster/ha/rules/{rule}` | Read HA rule. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/ha/rules/{rule}` | Update HA rule. | Sys.Console sur / | À faire |
-| DELETE | `/cluster/ha/rules/{rule}` | Delete HA rule. | Sys.Console sur / | À faire |
+| PUT | `/cluster/ha/rules/{rule}` | Update HA rule. | Sys.Console sur / | Fait |
+| DELETE | `/cluster/ha/rules/{rule}` | Delete HA rule. | Sys.Console sur / | Fait |
 | GET | `/cluster/ha/status` | Directory index. | tout utilisateur connecté | Hors périmètre |
 | POST | `/cluster/ha/status/arm-ha` | Request re-arming the HA stack after it was disarmed. | Sys.Console sur / | À faire |
 | GET | `/cluster/ha/status/current` | Get HA manager status. | Sys.Audit sur / | Fait |
 | POST | `/cluster/ha/status/disarm-ha` | Request disarming the HA stack, releasing all watchdogs cluster-wide. | Sys.Console sur / | À faire |
-| GET | `/cluster/ha/status/manager_status` | Get full HA manager status, including LRM status. | Sys.Audit sur / | À faire |
+| GET | `/cluster/ha/status/manager_status` | Get full HA manager status, including LRM status. | Sys.Audit sur / | Fait |
 
 ### Cluster : log
 

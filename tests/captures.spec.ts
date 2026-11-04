@@ -47,3 +47,11 @@ test("captures du nœud", async ({ page }) => {
   });
   await shot(page, "/serveur?node=pve&onglet=journaux", "noeud-journal");
 });
+
+test("captures du datacenter", async ({ page }) => {
+  await loginProxmox(page);
+  await shot(page, "/datacenter/resume", "datacenter");
+  await shot(page, "/datacenter/stockage", "datacenter-stockage");
+  await shot(page, "/datacenter/permissions", "datacenter-permissions");
+  await shot(page, "/datacenter/sauvegardes", "datacenter-sauvegardes");
+});

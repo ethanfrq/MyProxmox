@@ -9,6 +9,7 @@ const PAGES: [string, string][] = [
   ["/machines/pve/lxc/100", "pihole"],
   ["/creer", "Créer"],
   ["/serveur", "Nœud"],
+  ...["resume", "options", "stockage", "sauvegardes", "replication", "permissions", "ha", "sdn", "acme", "parefeu", "metriques", "notifications", "mappings"].map((s): [string, string] => [`/datacenter/${s}`, "Datacenter"]),
   ["/stockage", "Stockage"],
   ["/reseau", "Réseau"],
   ["/sauvegardes", "Sauvegardes"],

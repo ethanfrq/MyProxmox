@@ -47,6 +47,7 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 | Console | Écran des VM (noVNC) et terminal des conteneurs (xterm.js) directement dans MyProxmox, par un relais WebSocket authentifié |
 | Création | Assistants complets VM et conteneur (avec récapitulatif), mode simple d'une page, création depuis un modèle |
 | Nœud | Tout ce que Proxmox permet sur un nœud : résumé et alimentation (double confirmation), tout démarrer / arrêter / migrer, shell intégré, réseau en édition complète avec diff avant application, DNS, hosts, fuseau, certificats et ACME, mises à jour (journal des changements, mise à niveau dans le shell, dépôts APT), disques (SMART, GPT, effacement, LVM, LVM-thin, répertoires, assistant ZFS), Ceph, services, journal en direct, tâches, abonnement, pare-feu |
+| Datacenter | Résumé du cluster (créer, informations de jonction, rejoindre), options, stockages de tous types avec recherche des partages, sauvegardes planifiées (machines, pools, tags, exclusions, rétention, exécuter maintenant), réplication, permissions (utilisateurs, groupes, pools, rôles avec privilèges expliqués, ACL en arbre, domaines LDAP/AD/OpenID, 2FA TOTP/WebAuthn/codes de récupération, jetons API), HA, SDN, ACME, métriques, notifications, mappings, pare-feu et groupes de sécurité |
 | Stockage | Occupation, contenu, téléchargement d'ISO et de modèles, estimation du remplissage |
 | Réseau | Interfaces, ponts, inventaire des IP de toutes les machines, export CSV |
 | Sauvegardes | Couverture par machine, tâches planifiées, snapshots oubliés |
@@ -86,6 +87,8 @@ Ces informations existent dans l'API Proxmox, mais elles sont éparpillées dans
 | Console intégrée | Assistant de création |
 | ![Réseau du nœud](docs/images/noeud-reseau.png) | ![Journal du nœud](docs/images/noeud-journal.png) |
 | Réseau du nœud : diff avant application | Journal système en direct |
+| ![Datacenter](docs/images/datacenter.png) | ![Permissions](docs/images/datacenter-permissions.png) |
+| Datacenter : cluster et ressources | Permissions |
 
 Les captures viennent du mode démo, avec de fausses données. Tu peux l'essayer [en ligne](https://myproxmox.vercel.app) ou en local (voir plus bas).
 

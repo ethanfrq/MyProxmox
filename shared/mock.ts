@@ -127,7 +127,8 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
       ...NODES.map((nd) => ({ id: `node/${nd}`, type: "node", node: nd, status: "online", level: "", ...nodeStatus(nd) })),
       ...s.guests.map(resource),
       ...NODES.flatMap((nd) => storages(nd).map((st) => ({ id: `storage/${nd}/${st.storage}`, type: "storage", node: nd, storage: st.storage, plugintype: st.type, status: "available", disk: st.used, maxdisk: st.total, content: st.content, shared: st.shared }))),
-      ...[...new Set(s.guests.map((x) => x.pool).filter(Boolean))].map((pool) => ({ id: `/pool/${pool}`, type: "pool", pool })),
+      // Pools du datacenter (même vides) et ceux des machines
+      ...[...new Set([...(dcRoute("GET", ["pools"], {}) as Any[]).map((x) => x.poolid), ...s.guests.map((x) => x.pool).filter(Boolean)])].map((pool) => ({ id: `/pool/${pool}`, type: "pool", pool })),
     ];
     if (p.type === "vm") return list.filter((r) => r.type === "qemu" || r.type === "lxc");
     if (p.type === "storage") return list.filter((r) => r.type === "storage");
