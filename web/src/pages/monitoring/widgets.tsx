@@ -50,6 +50,8 @@ function Kpis({ d }: { d: Snap }) {
       <Big value={d.alerts.length} sub={crit ? `dont ${crit} critique${crit > 1 ? "s" : ""}` : "Alertes"} tone={crit ? "crit" : d.alerts.length ? "warn" : "ok"} />
       <Big value={<span className="mon-net">↓ {rate(netIn)}<br />↑ {rate(netOut)}</span>} sub="Réseau du nœud" />
       <Big value={pct(stoT ? stoU / stoT : 0)} sub={`Stockage · ${bytes(stoU)} / ${bytes(stoT)}`} tone={tone(stoT ? stoU / stoT : 0, 0.85, 0.95)} />
+      <Big value={<>{d.cluster.nodesOnline}<small> / {d.cluster.nodes}</small></>} sub={d.cluster.quorate === false ? "Nœuds · quorum PERDU" : "Nœuds en ligne"} tone={d.cluster.nodesOnline < d.cluster.nodes || d.cluster.quorate === false ? "crit" : "ok"} />
+      <Big value={d.failedTasks} sub={`Tâches en échec (24 h)${d.tasks.running.length ? ` · ${d.tasks.running.length} en cours` : ""}`} tone={d.failedTasks ? "warn" : "ok"} />
     </div>
   );
 }
@@ -61,13 +63,13 @@ function NodeCpu({ n, compact }: { n: MonNode; compact: boolean }) {
       {compact && <div className="mon-node-name">{n.node}</div>}
       <div className="mon-row">
         <Big value={pct(n.cpu)} sub={`${n.maxcpu} threads${n.cpuModel ? ` · ${n.cpuModel}` : ""}`} tone={tone(n.cpu)} />
-        <dl className="mon-dl">
+        {!compact && <dl className="mon-dl">
           <dt>Charge 1 / 5 / 15 min</dt><dd className="mono">{n.loadavg.map((x) => x.toFixed(2)).join("  ") || "-"}</dd>
           <dt>Attente disque</dt><dd>{pct(n.iowait, 1)}</dd>
           {n.psi && <><dt>Pression CPU / E-S / RAM</dt><dd>{[n.psi.cpu, n.psi.io, n.psi.mem].map((v) => (v === undefined ? "-" : `${Number(v).toFixed(1)} %`)).join(" · ")}</dd></>}
-        </dl>
+        </dl>}
       </div>
-      <LineChart title={`Processeur de ${n.node} sur 1 h`} series={series(n.rrd.hour, ["cpu", "iowait"])} max={1} format={(v) => pct(v)} times={n.rrd.hour.map((p) => p.t)} height={compact ? 70 : 110} />
+      <LineChart title={`Processeur de ${n.node} sur 1 h`} series={series(n.rrd.hour, ["cpu", "iowait"])} max={1} format={(v) => pct(v)} times={n.rrd.hour.map((p) => p.t)} height={compact ? 46 : 110} />
     </div>
   );
 }
@@ -84,16 +86,16 @@ function NodeMem({ n, compact }: { n: MonNode; compact: boolean }) {
         <span className="used" style={{ width: `${(n.mem.used / t) * 100}%` }} />
         <span className="cache" style={{ width: `${(cache / t) * 100}%` }} />
       </div>
-      <div className="mon-legend">
+      {!compact && <div className="mon-legend">
         <span><i className="used" />Utilisée {bytes(n.mem.used)}</span>
         {n.mem.cache !== null && <span><i className="cache" />Cache {bytes(cache)}</span>}
         <span><i />Libre {bytes(n.mem.free)}</span>
-      </div>
-      <dl className="mon-dl">
+      </div>}
+      {!compact && <dl className="mon-dl">
         <dt>KSM (pages partagées)</dt><dd>{bytes(n.ksm)}</dd>
         <dt>Swap</dt><dd>{n.swap.total ? `${bytes(n.swap.used)} / ${bytes(n.swap.total)}` : "aucun"}</dd>
-      </dl>
-      <LineChart title={`Mémoire de ${n.node} sur 1 h`} series={series(n.rrd.hour, ["mem"])} max={n.rrd.hour[0]?.memtotal || n.mem.total} format={(v) => bytes(v)} times={n.rrd.hour.map((p) => p.t)} height={compact ? 60 : 90} />
+      </dl>}
+      <LineChart title={`Mémoire de ${n.node} sur 1 h`} series={series(n.rrd.hour, ["mem"])} max={n.rrd.hour[0]?.memtotal || n.mem.total} format={(v) => bytes(v)} times={n.rrd.hour.map((p) => p.t)} height={compact ? 46 : 90} />
     </div>
   );
 }
@@ -111,14 +113,25 @@ function Nodes({ d }: { d: Snap }) {
             <span className="mon-sub">{n.status === "online" ? `en ligne depuis ${uptime(n.uptime)}` : "HORS LIGNE"}</span>
             <span className="mon-sub" style={{ marginLeft: "auto" }}>Proxmox VE {n.version} · noyau {n.kernel}</span>
           </div>
+          {n.status === "online" && (
+            <div className="mon-node-gauges">
+              <div><div className="mon-label">Processeur <span>{pct(n.cpu)} · charge {n.loadavg[0]?.toFixed(2) ?? "-"}</span></div><Gauge ratio={n.cpu} warn={0.75} crit={0.9} /></div>
+              <div><div className="mon-label">Mémoire <span>{bytes(n.mem.used)} / {bytes(n.mem.total)}</span></div><Gauge ratio={n.mem.total ? n.mem.used / n.mem.total : 0} warn={0.8} crit={0.92} /></div>
+              <div><div className="mon-label">Swap <span>{n.swap.total ? `${bytes(n.swap.used)} / ${bytes(n.swap.total)}` : "aucun"}</span></div><Gauge ratio={n.swap.total ? n.swap.used / n.swap.total : 0} warn={0.5} crit={0.8} /></div>
+            </div>
+          )}
           <div className="mon-row">
             <div style={{ flex: 1 }}>
               <div className="mon-label">Disque système <span>{bytes(n.rootfs.used)} / {bytes(n.rootfs.total)}</span></div>
               <Gauge ratio={n.rootfs.total ? n.rootfs.used / n.rootfs.total : 0} warn={0.8} crit={0.92} />
             </div>
-            <div className={`mon-pill ${n.securityUpdates ? "warn" : n.updates ? "" : "ok"}`}>
-              {n.updates ? `${n.updates} mise${n.updates > 1 ? "s" : ""} à jour${n.securityUpdates ? `, dont ${n.securityUpdates} de sécurité` : ""}` : "À jour"}
-            </div>
+            {n.updates === null ? (
+              <div className="mon-pill" title="Proxmox demande le droit Sys.Modify pour lister les mises à jour. Le compte de service ne l'a pas, volontairement.">Mises à jour : non lisibles</div>
+            ) : (
+              <div className={`mon-pill ${n.securityUpdates ? "warn" : n.updates ? "" : "ok"}`}>
+                {n.updates ? `${n.updates} mise${n.updates > 1 ? "s" : ""} à jour${n.securityUpdates ? `, dont ${n.securityUpdates} de sécurité` : ""}` : "À jour"}
+              </div>
+            )}
           </div>
           <div className="mon-services">
             {n.services.map((s) => <span key={s.name} className={`svc ${SVC[s.state][0]}`} title={SVC[s.state][1]}><i />{s.name}<small>{SVC[s.state][1]}</small></span>)}
@@ -223,6 +236,148 @@ function Guests({ d, ctx }: { d: Snap; ctx: Ctx }) {
           <div className="mon-guests">{gs.map((g) => <GuestCard key={`${name}-${g.vmid}`} g={g} />)}</div>
         </Fragment>
       ))}
+    </div>
+  );
+}
+
+// ── Machines en tableau ───────────────────────────────────────────
+function GuestsTable({ d, ctx }: { d: Snap; ctx: Ctx }) {
+  const list = sortGuests(d.guests, ctx.sort);
+  const multi = new Set(d.guests.map((g) => g.node)).size > 1;
+  return (
+    <table className="mon-table mon-guest-table">
+      <thead>
+        <tr>
+          <th>Machine</th>{multi && <th>Nœud</th>}<th className="num">CPU</th><th className="num">RAM</th><th className="num">Disque</th>
+          <th className="num">E/S disque</th><th className="num">Réseau</th><th>Allumée depuis</th><th>Adresse IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {list.map((g) => {
+          const run = g.status === "running";
+          const memR = g.maxmem ? g.mem / g.maxmem : 0;
+          const diskR = g.maxdisk && g.type === "lxc" ? g.disk / g.maxdisk : null;
+          return (
+            <tr key={g.vmid} className={run ? "" : "off"}>
+              <td><span className={`dot ${run ? "ok" : g.status === "paused" ? "warn" : "off"}`} /> <strong>{g.name}</strong> <span className="mon-sub">{g.vmid} · {g.type === "qemu" ? "VM" : "CT"}</span></td>
+              {multi && <td className="mon-sub">{g.node}</td>}
+              <td className={`num ${run ? tone(g.cpu) ?? "" : ""}`}>{run ? <span className="mon-cell-spark">{pct(g.cpu)}<Spark values={g.spark} max={Math.max(0.25, ...g.spark)} color={C.cpu} /></span> : "-"}</td>
+              <td className={`num ${run ? tone(memR, 0.85, 0.95) ?? "" : ""}`}>{run ? `${bytes(g.mem)} · ${pct(memR)}` : bytes(g.maxmem)}</td>
+              <td className={`num ${diskR !== null ? tone(diskR, 0.85, 0.95) ?? "" : ""}`}>{diskR !== null ? `${pct(diskR)} de ${bytes(g.maxdisk)}` : g.maxdisk ? bytes(g.maxdisk) : "-"}</td>
+              <td className="num">{run ? `↓ ${fmtRate(g.diskread)} ↑ ${fmtRate(g.diskwrite)}` : "-"}</td>
+              <td className="num">{run ? `↓ ${fmtRate(g.netin)} ↑ ${fmtRate(g.netout)}` : "-"}</td>
+              <td className="mon-sub">{run ? uptime(g.uptime) : g.status === "stopped" ? "arrêtée" : g.status}</td>
+              <td className="mono mon-sub">{g.ips.slice(0, 2).join(", ") || "-"}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+// ── Plus gros consommateurs ───────────────────────────────────────
+function Top({ d }: { d: Snap }) {
+  const run = d.guests.filter((g) => g.status === "running");
+  const blocks: { title: string; value: (g: MonGuest) => number; fmt: (g: MonGuest) => string }[] = [
+    { title: "Processeur", value: (g) => g.cpu, fmt: (g) => pct(g.cpu) },
+    { title: "Mémoire", value: (g) => g.mem, fmt: (g) => bytes(g.mem) },
+    { title: "Disque (lecture + écriture)", value: (g) => (g.diskread ?? 0) + (g.diskwrite ?? 0), fmt: (g) => rate((g.diskread ?? 0) + (g.diskwrite ?? 0)) },
+    { title: "Réseau (entrant + sortant)", value: (g) => (g.netin ?? 0) + (g.netout ?? 0), fmt: (g) => rate((g.netin ?? 0) + (g.netout ?? 0)) },
+  ];
+  if (!run.length) return <div className="mon-sub">Aucune machine en marche.</div>;
+  return (
+    <div className="stack-s">
+      {blocks.map((b) => {
+        const list = [...run].sort((x, y) => b.value(y) - b.value(x)).slice(0, 4);
+        const max = Math.max(1e-9, b.value(list[0]));
+        return (
+          <div key={b.title}>
+            <div className="mon-label">{b.title}</div>
+            {list.map((g) => (
+              <div key={g.vmid} className="mon-top">
+                <span className="n">{g.name}</span>
+                <span className="mon-top-bar"><i style={{ width: `${(b.value(g) / max) * 100}%` }} /></span>
+                <span className="num">{b.fmt(g)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Tâches ────────────────────────────────────────────────────────
+const taskName = (t: { type: string; id: string }) => `${TASK_LABEL[t.type] ?? t.type}${t.id ? ` ${t.id}` : ""}`;
+function Tasks({ d }: { d: Snap }) {
+  const { running, failed } = d.tasks;
+  return (
+    <div className="stack-s">
+      <div className="mon-label">En cours <span>{running.length}</span></div>
+      {running.length ? (
+        <div className="mon-list">
+          {running.map((t) => (
+            <div key={t.upid} className="mon-alert">
+              <span className="dot warn" /><span className="t">{taskName(t)}<span className="mon-sub"> · {t.node} · {t.user}</span></span>
+              <span className="mon-sub nowrap">{ago(t.start).replace("il y a ", "depuis ")}</span>
+            </div>
+          ))}
+        </div>
+      ) : <div className="mon-sub">Aucune tâche en cours.</div>}
+      <div className="mon-label">Échecs sur 24 h <span>{failed.length}</span></div>
+      {failed.length ? (
+        <div className="mon-list">
+          {failed.map((t) => (
+            <div key={t.upid} className="mon-alert">
+              <span className="dot crit" /><span className="t">{taskName(t)}<span className="mon-sub"> · {t.status}</span></span>
+              <span className="mon-sub nowrap">{ago(t.start)}</span>
+            </div>
+          ))}
+        </div>
+      ) : <div className="mon-okmsg">Aucun échec.</div>}
+    </div>
+  );
+}
+
+// ── Réplication ───────────────────────────────────────────────────
+function Replication({ d }: { d: Snap }) {
+  if (!d.replication.length) return <div className="mon-sub">Aucune réplication planifiée.</div>;
+  return (
+    <table className="mon-table">
+      <thead><tr><th>Machine</th><th>Vers</th><th>Dernière synchro</th><th className="num">Durée</th><th>Prochaine</th><th>État</th></tr></thead>
+      <tbody>
+        {d.replication.map((r) => (
+          <tr key={r.id}>
+            <td><strong>{r.name || r.guest}</strong> <span className="mon-sub">{r.id}</span></td>
+            <td className="mono">{r.target}</td>
+            <td>{r.lastSync ? ago(r.lastSync) : "jamais"}</td>
+            <td className="num">{r.duration === null ? "-" : `${r.duration.toFixed(1)} s`}</td>
+            <td className="mon-sub">{!r.enabled ? "désactivée" : r.nextSync ? new Date(r.nextSync * 1000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "-"}</td>
+            <td className={r.failCount ? "crit" : !r.enabled ? "" : "ok"}>{r.failCount ? `${r.failCount} échec${r.failCount > 1 ? "s" : ""}${r.error ? ` : ${r.error}` : ""}` : r.enabled ? "OK" : "en pause"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// ── Ceph ──────────────────────────────────────────────────────────
+function Ceph({ d }: { d: Snap }) {
+  const c = d.ceph;
+  if (!c) return <div className="mon-sub">Ceph n&apos;est installé sur aucun nœud en ligne.</div>;
+  const ok = c.health === "HEALTH_OK";
+  return (
+    <div className="stack-s">
+      <div className="mon-row">
+        <Big value={ok ? "OK" : c.health.replace("HEALTH_", "")} sub={`Santé Ceph (lue sur ${c.node})`} tone={ok ? "ok" : c.health === "HEALTH_ERR" ? "crit" : "warn"} />
+        <Big value={<>{c.osds.up}<small> / {c.osds.total}</small></>} sub={`OSD actifs · ${c.osds.in} dans le cluster`} tone={c.osds.up < c.osds.total ? "warn" : "ok"} />
+        <Big value={<>{c.pgsClean}<small> / {c.pgs}</small></>} sub="Groupes de placement propres" tone={c.pgsClean < c.pgs ? "warn" : "ok"} />
+        <Big value={<span className="mon-net">↓ {rate(c.read)}<br />↑ {rate(c.write)}</span>} sub={`${c.mons} moniteur${c.mons > 1 ? "s" : ""}`} />
+      </div>
+      <div className="mon-label">Espace <span>{bytes(c.used)} / {bytes(c.total)}</span></div>
+      <Gauge ratio={c.total ? c.used / c.total : 0} warn={0.75} crit={0.85} />
+      {c.checks.map((x) => <div key={x} className="warn">{x}</div>)}
     </div>
   );
 }
@@ -429,6 +584,11 @@ export const RENDER: Record<WidgetId, (d: Snap, ctx: Ctx) => ReactNode> = {
   cluster: (d) => <Cluster d={d} />,
   alerts: (d) => <Alerts d={d} />,
   guests: (d, ctx) => <Guests d={d} ctx={ctx} />,
+  "guests-table": (d, ctx) => <GuestsTable d={d} ctx={ctx} />,
+  top: (d) => <Top d={d} />,
+  tasks: (d) => <Tasks d={d} />,
+  replication: (d) => <Replication d={d} />,
+  ceph: (d) => <Ceph d={d} />,
   network: (d) => <Network d={d} />,
   "net-history": (d) => <NetHistory d={d} />,
   storage: (d) => <Storage d={d} />,
@@ -446,7 +606,8 @@ export function widgetsForAlert(key: string): WidgetId[] {
   const map: Record<string, WidgetId[]> = {
     node: ["nodes", "cluster", "kpis"], cpu: ["cpu", "kpis"], mem: ["memory", "kpis"], rootfs: ["nodes"],
     storage: ["storage", "kpis"], "storage-off": ["storage"], smart: ["disks"], wear: ["disks"], zfs: ["disks"],
-    backup: ["backups"], task: ["activity", "backups"], cert: ["security"], updates: ["nodes"], down: ["guests"],
+    backup: ["backups"], task: ["activity", "backups", "tasks"], cert: ["security"], updates: ["nodes"], down: ["guests", "guests-table"],
+    replication: ["replication"], ceph: ["ceph"],
   };
   return map[k] ?? [];
 }

@@ -1,5 +1,12 @@
 # Historique
 
+## Non publié
+
+- Écran de monitoring : plus de défilement automatique par défaut. L'écran reste sur la vue choisie et s'en souvient ; le défilement (30 s, 1 min, 2 min) reste disponible pour une TV
+- Écran de monitoring : nouvelles vues « Machines » en tableau (CPU, RAM, disque, E/S, réseau, IP) avec les plus gros consommateurs, et « Nœuds et cluster » ; nouveaux widgets tâches en cours et en échec, réplication, Ceph ; 8 chiffres clés ; processeur, mémoire et swap de chaque nœud
+- Écran de monitoring : un compte Proxmox en lecture seule (Sys.Audit sur « / », rôle PVEAuditor) voit tout par le compte de service, sans être administrateur. Les autres comptes Proxmox voient leurs propres droits, et l'écran le leur dit
+- Mises à jour en attente : « non lisibles » quand le compte n'a pas le droit de les lister, au lieu d'un faux « À jour »
+
 ## 2.0.0 (2026-11-04)
 
 - Socle commun : tableau triable avec actions groupées, formulaires décrits par schéma, assistants à étapes, journal des tâches en direct (« Voir le journal » dans les notifications), arbre des ressources à gauche (vues serveurs, pools, tags) avec menu contextuel

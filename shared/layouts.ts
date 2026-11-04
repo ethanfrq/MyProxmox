@@ -8,6 +8,11 @@ export const WIDGETS = {
   cluster: "Cluster et HA",
   alerts: "Alertes actives",
   guests: "Machines",
+  "guests-table": "Machines (tableau)",
+  top: "Plus gros consommateurs",
+  tasks: "Tâches",
+  replication: "Réplication",
+  ceph: "Ceph",
   network: "Réseau par pont",
   "net-history": "Débit réseau (24 h)",
   storage: "Stockage",
@@ -38,15 +43,18 @@ export function normalizeLayout(name: string, body: any): MonLayout {
   return { name: n, widgets, updatedAt: new Date().toISOString() };
 }
 
-/** Vues qui tournent automatiquement quand aucune disposition n'est choisie. */
+/** Vues standard. Elles ne défilent que si l'écran le demande (réglage « Faire défiler »). */
 export const VIEWS: { id: string; title: string; widgets: WidgetPlace[] }[] = [
-  { id: "general", title: "Vue générale", widgets: [
-    { id: "kpis", w: 12, h: 1 }, { id: "cpu", w: 4, h: 2 }, { id: "memory", w: 4, h: 2 }, { id: "alerts", w: 4, h: 2 },
-    { id: "nodes", w: 6, h: 1 }, { id: "storage", w: 6, h: 1 },
+  { id: "general", title: "Vue d'ensemble", widgets: [
+    { id: "kpis", w: 12, h: 1 },
+    { id: "cpu", w: 3, h: 2 }, { id: "memory", w: 3, h: 2 }, { id: "alerts", w: 3, h: 2 }, { id: "tasks", w: 3, h: 2 },
+    { id: "storage", w: 4, h: 1 }, { id: "backups", w: 4, h: 1 }, { id: "cluster", w: 4, h: 1 },
   ] },
-  { id: "machines", title: "Machines", widgets: [{ id: "guests", w: 12, h: 4 }] },
-  { id: "reseau", title: "Réseau", widgets: [{ id: "network", w: 5, h: 2 }, { id: "net-history", w: 7, h: 2 }, { id: "cluster", w: 5, h: 2 }, { id: "activity", w: 7, h: 2 }] },
-  { id: "stockage", title: "Stockage et disques", widgets: [{ id: "storage", w: 6, h: 3 }, { id: "disks", w: 6, h: 3 }] },
-  { id: "securite", title: "Sauvegardes et sécurité", widgets: [{ id: "backups", w: 7, h: 3 }, { id: "security", w: 5, h: 3 }] },
+  { id: "machines", title: "Machines", widgets: [{ id: "guests-table", w: 8, h: 4 }, { id: "top", w: 4, h: 4 }] },
+  { id: "cartes", title: "Machines en cartes", widgets: [{ id: "guests", w: 12, h: 4 }] },
+  { id: "noeuds", title: "Nœuds et cluster", widgets: [{ id: "nodes", w: 7, h: 2 }, { id: "cluster", w: 5, h: 2 }, { id: "replication", w: 7, h: 2 }, { id: "ceph", w: 5, h: 2 }] },
+  { id: "reseau", title: "Réseau", widgets: [{ id: "network", w: 5, h: 2 }, { id: "net-history", w: 7, h: 2 }, { id: "activity", w: 12, h: 2 }] },
+  { id: "stockage", title: "Stockage et disques", widgets: [{ id: "storage", w: 6, h: 3 }, { id: "disks", w: 6, h: 3 }, { id: "ceph", w: 12, h: 1 }] },
+  { id: "securite", title: "Sauvegardes et sécurité", widgets: [{ id: "backups", w: 7, h: 3 }, { id: "security", w: 5, h: 3 }, { id: "tasks", w: 12, h: 1 }] },
   { id: "historique", title: "Historique 24 h / 7 j", widgets: [{ id: "history-24h", w: 12, h: 2 }, { id: "history-7d", w: 12, h: 2 }] },
 ];

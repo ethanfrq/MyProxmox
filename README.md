@@ -54,7 +54,7 @@ Depuis la version 2, il couvre presque tout ce que fait l'interface officielle (
 | Sauvegardes | Couverture par machine, tâches planifiées, snapshots oubliés |
 | Sécurité | Comptes sans 2FA, jetons API, pare-feu, certificats, échecs de connexion par IP |
 | Alertes | Règles réglables, cloche, notifications Windows, Discord, ntfy, webhook |
-| Monitoring | Écran plein écran en lecture seule pour une TV, ouvert par un lien secret |
+| Monitoring | Écran plein écran en lecture seule pour une TV : 8 vues fixes ou qui défilent, machines en tableau, tâches, réplication, Ceph ; tout visible avec un compte en lecture seule, sans être administrateur |
 | MCP | 24 outils pour Claude (machines, nœuds, datacenter, HA, SDN, Ceph, pare-feu, permissions, réplication, PBS), clés révocables en lecture ou en actions, journal |
 | Accessibilité | Navigation au clavier, focus visible, libellés sur les boutons à icône, pages chargées à la demande (premier écran sous 100 Ko gzip) |
 
@@ -171,14 +171,24 @@ Ce qu'il affiche :
 
 | Vue | Contenu |
 |---|---|
-| Vue générale | Chiffres clés, processeur (charge 1/5/15, attente disque, pression PSI), mémoire (utilisée, cache, libre, KSM, swap), alertes actives avec leur durée, nœuds (version, noyau, disque système, services critiques, mises à jour), stockage |
-| Machines | Toutes les VM et conteneurs : statut, CPU avec mini graphe, RAM, débit réseau, uptime, IP, tags ; tri au choix, regroupement par tag ou par nœud |
-| Réseau | Débit par pont et total des interfaces physiques, machines les plus actives, débit sur 24 h, quorum et ressources HA, activité en direct (tâches Proxmox, actions faites via MyProxmox et le MCP) |
-| Stockage et disques | Occupation, date estimée de remplissage, stockages hors ligne, santé SMART, usure des SSD, température, lectures et écritures, pools ZFS |
-| Sauvegardes et sécurité | Dernière et prochaine exécution de chaque sauvegarde planifiée, machines non couvertes, échecs de connexion sur 24 h, certificats qui expirent |
+| Vue d'ensemble | 8 chiffres clés (CPU, RAM, machines, alertes, réseau, stockage, nœuds en ligne, tâches en échec), processeur et mémoire de chaque nœud, alertes actives avec leur durée, tâches en cours et échecs des dernières 24 h, stockage, sauvegardes, quorum et HA |
+| Machines | Tableau de toutes les VM et conteneurs : CPU avec mini graphe, RAM, disque (conteneurs), lectures et écritures, réseau, uptime, IP ; tri au choix ; à côté, les plus gros consommateurs en CPU, RAM, disque et réseau |
+| Machines en cartes | Les mêmes machines en cartes, avec regroupement par tag ou par nœud |
+| Nœuds et cluster | Processeur, mémoire, swap, disque système, services critiques, mises à jour de chaque nœud ; quorum et ressources HA ; réplication (dernière synchro, durée, échecs) ; santé Ceph (OSD, groupes de placement, espace, débit) |
+| Réseau | Débit par pont et total des interfaces physiques, machines les plus actives, débit sur 24 h, activité en direct (tâches Proxmox, actions faites via MyProxmox et le MCP) |
+| Stockage et disques | Occupation, date estimée de remplissage, stockages hors ligne, santé SMART, usure des SSD, température, lectures et écritures, pools ZFS, Ceph |
+| Sauvegardes et sécurité | Dernière et prochaine exécution de chaque sauvegarde planifiée, machines non couvertes, échecs de connexion sur 24 h, certificats qui expirent, tâches |
 | Historique | CPU, RAM, réseau, attente disque et charge sur 24 h et 7 jours |
 
-Les vues tournent toutes seules (15, 30 ou 60 s, ou vue fixe), avec une barre de progression. En alerte critique, le bandeau devient rouge et pulse, le widget concerné est encadré, et un son peut prévenir (désactivé par défaut, à activer écran par écran). Si les données ne sont plus fraîches, l'écran l'affiche clairement.
+L'écran reste sur la vue que tu choisis, et s'en souvient au prochain chargement. Pour une TV, tu peux faire défiler les vues (toutes les 30 s, 1 min ou 2 min) depuis la liste en haut à droite, ou avec `?rotation=60` dans l'adresse. En alerte critique, le bandeau devient rouge et pulse, le widget concerné est encadré, et un son peut prévenir (désactivé par défaut, à activer écran par écran). Si les données ne sont plus fraîches, l'écran l'affiche clairement.
+
+**Qui voit tout, sans être administrateur.** L'écran lit les données avec le compte de service de MyProxmox, en lecture seule, pour :
+
+- le lien secret ;
+- les comptes MyProxmox (rôle « monitoring » ou « lecture ») ;
+- les comptes Proxmox qui ont le droit Sys.Audit sur « / », par exemple le rôle **PVEAuditor**, qui ne permet de rien modifier.
+
+Inutile donc de te connecter en root ou en administrateur pour avoir l'écran complet. Un compte Proxmox sans Sys.Audit voit seulement ce que ses droits lui permettent, et l'écran le lui signale. Seule exception : Proxmox demande Sys.Modify pour lister les mises à jour en attente. Le compte de service ne l'a pas, volontairement, donc l'écran indique « Mises à jour : non lisibles » au lieu d'un faux « À jour ».
 
 **Mode mur** : un administrateur choisit les widgets, leur ordre et leur taille sur une grille de 12 colonnes (bouton « Créer un mur », glisser-déposer). Chaque disposition a un nom et s'ouvre avec `?layout=nom`, par exemple `/monitoring?key=…&layout=salon`. Les dispositions sont enregistrées dans `data/monitoring-layouts.json`.
 

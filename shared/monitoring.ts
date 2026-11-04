@@ -30,7 +30,8 @@ export interface MonNode {
   version: string;
   kernel: string;
   services: { name: string; state: "running" | "stopped" | "disabled" | "absent" }[];
-  updates: number;
+  /** null : liste illisible avec ce compte (Proxmox demande Sys.Modify pour la lire) */
+  updates: number | null;
   securityUpdates: number;
   rrd: { hour: Point[]; day: Point[]; week: Point[] };
   bridges: { name: string; ports: string; comment: string; in: number | null; out: number | null; guests: number }[];
@@ -40,8 +41,12 @@ export interface MonGuest {
   vmid: number; name: string; type: "qemu" | "lxc"; node: string; status: string; tags: string[]; ips: string[];
   cpu: number; maxcpu: number; mem: number; maxmem: number; uptime: number;
   netin: number | null; netout: number | null; diskread: number | null; diskwrite: number | null;
+  disk: number; maxdisk: number; // occupation du disque (conteneurs seulement ; 0 pour une VM sans agent)
   spark: number[]; // CPU des dernières minutes
 }
+export interface MonTask { upid: string; type: string; id: string; node: string; user: string; start: number; end: number | null; status: string | null }
+export interface MonReplication { id: string; guest: number; name: string; source: string; target: string; schedule: string; lastSync: number | null; nextSync: number | null; duration: number | null; failCount: number; error: string | null; enabled: boolean }
+export interface MonCeph { node: string; health: string; checks: string[]; osds: { total: number; up: number; in: number }; mons: number; used: number; total: number; pgs: number; pgsClean: number; read: number; write: number }
 export interface MonStorage {
   id: string; storage: string; node: string; type: string; shared: boolean; active: boolean;
   used: number; total: number; daysToFull: number | null; fullDate: number | null;
@@ -62,6 +67,11 @@ export interface MonitoringData {
   backups: { jobs: MonBackupJob[]; uncovered: { vmid: number; name: string }[] };
   security: { failures24h: number; byIp: [string, number][]; certificates: { node: string; filename: string; days: number }[] };
   activity: MonActivity[];
+  tasks: { running: MonTask[]; failed: MonTask[] };
+  replication: MonReplication[];
+  ceph: MonCeph | null;
+  /** service : lu avec le compte de service MyProxmox ; personnel : avec les droits de la personne connectée */
+  source: "service" | "personnel";
   counts: { guests: number; running: number; vms: number; containers: number };
   failedTasks: number;
   timings: { live: number; heavyAge: number };
@@ -187,7 +197,7 @@ export async function monitoring(call: Call, id = "service", activityLog: Activi
       cached(st, `${node}:day`, 5 * MIN, () => call("GET", `/nodes/${node}/rrddata`, { timeframe: "day" }), [] as any[]),
       cached(st, `${node}:week`, 15 * MIN, () => call("GET", `/nodes/${node}/rrddata`, { timeframe: "week" }), [] as any[]),
       cached(st, `${node}:services`, MIN, () => call("GET", `/nodes/${node}/services`), [] as any[]),
-      cached(st, `${node}:apt`, 15 * MIN, () => call("GET", `/nodes/${node}/apt/update`), [] as any[]),
+      cached(st, `${node}:apt`, 15 * MIN, () => call("GET", `/nodes/${node}/apt/update`), null as any[] | null),
       cached(st, `${node}:network`, 5 * MIN, () => call("GET", `/nodes/${node}/network`), [] as any[]),
       cached(st, `${node}:disks`, 15 * MIN, async () => {
         const list = await call("GET", `/nodes/${node}/disks/list`);
@@ -212,6 +222,21 @@ export async function monitoring(call: Call, id = "service", activityLog: Activi
     cached(st, "backup-uncovered", 15 * MIN, () => call("GET", "/cluster/backup-info/not-backed-up"), [] as any[]),
   ]);
   const haResources = await cached(st, "ha-resources", MIN, () => call("GET", "/cluster/ha/resources"), [] as any[]);
+  // Réplication : les tâches du cluster, et leur état vu depuis chaque nœud
+  const replRaw = await cached(st, "replication", MIN, async () => {
+    const jobs = await call("GET", "/cluster/replication");
+    if (!jobs.length) return { jobs, states: [] as any[] };
+    const states = (await Promise.all(online.map((node: string) => safe(call("GET", `/nodes/${node}/replication`), [] as any[])))).flat();
+    return { jobs, states };
+  }, { jobs: [] as any[], states: [] as any[] });
+  // Ceph : lu depuis le premier nœud en ligne qui l'a installé
+  const cephRaw = await cached(st, "ceph", MIN, async () => {
+    for (const node of online) {
+      const c = await safe(call("GET", `/nodes/${node}/ceph/status`), null as any);
+      if (c?.health) return { node, ...c };
+    }
+    return false;
+  }, false as any);
   const heavyAge = Math.max(0, ...Object.values(st.slots).map((s) => (s.at ? Date.now() - s.at : 0)));
 
   // ── Machines ──
@@ -236,7 +261,7 @@ export async function monitoring(call: Call, id = "service", activityLog: Activi
       vmid: g.vmid, name: g.name, type: g.type, node: g.node, status: g.status,
       tags: String(g.tags ?? "").split(/[;,\s]+/).filter(Boolean), ips: i?.ips ?? [],
       cpu: num(g.cpu), maxcpu: num(g.maxcpu), mem: num(g.mem), maxmem: num(g.maxmem), uptime: num(g.uptime),
-      netin, netout, diskread, diskwrite, spark: [...spark],
+      netin, netout, diskread, diskwrite, disk: num(g.disk), maxdisk: num(g.maxdisk), spark: [...spark],
     };
   });
   const sumRates = (k: "diskread" | "diskwrite") => (guests.some((g) => g[k] === null && g.status === "running") ? null : guests.reduce((s, g) => s + (g[k] ?? 0), 0));
@@ -278,7 +303,7 @@ export async function monitoring(call: Call, id = "service", activityLog: Activi
       rootfs: { used: num(s?.rootfs?.used ?? n.disk), total: num(s?.rootfs?.total ?? n.maxdisk) },
       version: String(s?.pveversion ?? "").split("/")[1] ?? "", kernel: s?.["current-kernel"]?.release ?? String(s?.kversion ?? "").split(" ")[1] ?? "",
       services,
-      updates: (h?.updates ?? []).length,
+      updates: h?.updates ? h.updates.length : null,
       securityUpdates: (h?.updates ?? []).filter((u: any) => /secur/i.test(`${u.Origin} ${u.Title} ${u.Section}`) || (u.Origin === "Debian" && /deb\d+u\d+/.test(u.Version))).length,
       rrd: { hour, day: points(h?.day ?? []), week: points(h?.week ?? []) },
       bridges,
@@ -359,9 +384,43 @@ export async function monitoring(call: Call, id = "service", activityLog: Activi
     }),
   };
 
+  // ── Tâches : en cours, et échecs des dernières 24 h ──
+  const task = (t: any): MonTask => ({ upid: t.upid, type: t.type, id: String(t.id ?? ""), node: t.node, user: t.user ?? "", start: num(t.starttime), end: t.endtime ? num(t.endtime) : null, status: t.status ?? null });
+  const taskList = {
+    running: tasks.filter((t: any) => !t.status && !t.endtime).slice(0, 8).map(task),
+    failed: tasks.filter((t: any) => t.status && t.status !== "OK" && t.starttime > since).slice(0, 8).map(task),
+  };
+
+  // ── Réplication ──
+  const names = new Map(guests.map((g) => [g.vmid, g.name]));
+  const replication: MonReplication[] = replRaw.jobs.map((j: any) => {
+    const x = replRaw.states.find((v: any) => v.id === j.id) ?? {};
+    return {
+      id: j.id, guest: num(j.guest), name: names.get(num(j.guest)) ?? "", source: x.source ?? "", target: j.target, schedule: j.schedule ?? "*/15",
+      lastSync: x.last_sync ? num(x.last_sync) : null, nextSync: x.next_sync ? num(x.next_sync) : null, duration: x.duration !== undefined ? num(x.duration) : null,
+      failCount: num(x.fail_count), error: x.error ?? null, enabled: !Number(j.disable ?? 0),
+    };
+  });
+
+  // ── Ceph ──
+  const c = cephRaw || null;
+  const ceph: MonCeph | null = c ? {
+    node: c.node, health: String(c.health?.status ?? "?"),
+    checks: Object.entries(c.health?.checks ?? {}).map(([k, v]: [string, any]) => v?.summary?.message ?? k),
+    osds: { total: num(c.osdmap?.num_osds ?? c.osdmap?.osdmap?.num_osds), up: num(c.osdmap?.num_up_osds ?? c.osdmap?.osdmap?.num_up_osds), in: num(c.osdmap?.num_in_osds ?? c.osdmap?.osdmap?.num_in_osds) },
+    mons: (c.monmap?.mons ?? []).length,
+    used: num(c.pgmap?.bytes_used), total: num(c.pgmap?.bytes_total),
+    pgs: num(c.pgmap?.num_pgs), pgsClean: (c.pgmap?.pgs_by_state ?? []).filter((x: any) => x.state_name === "active+clean").reduce((a: number, x: any) => a + num(x.count), 0),
+    read: num(c.pgmap?.read_bytes_sec), write: num(c.pgmap?.write_bytes_sec),
+  } : null;
+
   return {
     at: new Date().toISOString(),
     cluster,
+    tasks: taskList,
+    replication,
+    ceph,
+    source: id === "service" ? "service" : "personnel",
     nodes,
     guests,
     storages,

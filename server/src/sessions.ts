@@ -19,6 +19,8 @@ export interface Session {
   ticket: string; // vide pour une session locale
   csrf: string;
   admin: boolean;
+  /** Sys.Audit sur « / » : peut tout lire (rôle PVEAuditor) */
+  auditor?: boolean;
   role?: LocalRole;
   userId?: string;
   displayName?: string;

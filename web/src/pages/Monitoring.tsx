@@ -1,6 +1,6 @@
 // Écran de monitoring : lecture seule, données vives toutes les 5 s, pensé pour rester
 // affiché sur une TV. Deux modes :
-//  - vues qui tournent (Vue générale, Machines, Réseau...) ;
+//  - vues standard (Vue d'ensemble, Machines, Nœuds...), fixes par défaut, avec défilement en option ;
 //  - « mur » : disposition nommée choisie par ?layout=nom, éditable par un administrateur.
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -54,7 +54,7 @@ function Widget({ place, d, ctx, alarm, onCtx }: { place: WidgetPlace; d: Snap; 
     <section className={`mon-card mw-${place.w} mh-${place.h} ${alarm ? "alarm" : ""}`} aria-label={WIDGETS[place.id]}>
       <div className="mon-card-head">
         <h3>{WIDGETS[place.id]}</h3>
-        {place.id === "guests" && (
+        {(place.id === "guests" || place.id === "guests-table") && (
           <span className="mon-tools">
             <select aria-label="Trier les machines" value={ctx.sort} onChange={(e) => onCtx({ sort: e.target.value as GuestSort })}>
               <option value="status">En marche d'abord</option><option value="vmid">Par ID</option><option value="name">Par nom</option>
@@ -164,13 +164,15 @@ export function Monitoring() {
   };
 
   // Réglages propres à cet écran
-  const [rotation, setRotation] = useState(() => Number(params.get("rotation") ?? store.get("myproxmox-mon-rotation") ?? 30));
+  // Pas de défilement par défaut : l'écran reste sur la vue choisie
+  const [rotation, setRotation] = useState(() => Number(params.get("rotation") ?? store.get("myproxmox-mon-defilement") ?? 0));
   const [sound, setSound] = useState(() => store.get("myproxmox-mon-sound") === "on");
   const [ctx, setCtx] = useState<Ctx>(() => ({ sort: (store.get("myproxmox-mon-sort") as GuestSort) || "status", group: (store.get("myproxmox-mon-group") as GuestGroup) || "none" }));
-  const [view, setView] = useState(() => Math.max(0, VIEWS.findIndex((v) => v.id === params.get("vue"))));
+  const [view, setView] = useState(() => Math.max(0, VIEWS.findIndex((v) => v.id === (params.get("vue") ?? store.get("myproxmox-mon-vue")))));
   const [elapsed, setElapsed] = useState(0);
   const [editing, setEditing] = useState(false);
-  useEffect(() => store.set("myproxmox-mon-rotation", String(rotation)), [rotation]);
+  useEffect(() => store.set("myproxmox-mon-defilement", String(rotation)), [rotation]);
+  useEffect(() => store.set("myproxmox-mon-vue", VIEWS[view].id), [view]);
   useEffect(() => store.set("myproxmox-mon-sound", sound ? "on" : "off"), [sound]);
   const updateCtx = useCallback((c: Partial<Ctx>) => setCtx((o) => {
     const n = { ...o, ...c };
@@ -258,6 +260,12 @@ export function Monitoring() {
         </div>
       </header>
 
+      {d.source === "personnel" && (
+        <div className="mon-banner info" role="note">
+          Tu vois seulement ce que ton compte Proxmox a le droit de lire.
+          <span className="mon-banner-msg">Pour tout voir sans être administrateur : un compte MyProxmox « monitoring », ou un compte Proxmox avec le rôle PVEAuditor (lecture seule) sur « / ».</span>
+        </div>
+      )}
       <div className={`mon-banner ${level}`} role="alert">
         {level === "ok" ? "Tout fonctionne normalement" : `${crit.length ? `${crit.length} alerte(s) critique(s)` : ""}${crit.length && warn.length ? " · " : ""}${warn.length ? `${warn.length} point(s) à surveiller` : ""}`}
         {level !== "ok" && <span className="mon-banner-msg">{(crit[0] ?? warn[0]).title}</span>}
@@ -274,12 +282,12 @@ export function Monitoring() {
         ))}
         <span className="mon-controls">
           {!layoutName && (
-            <select aria-label="Changement de vue" value={rotation} onChange={(e) => setRotation(Number(e.target.value))}>
-              <option value={15}>Rotation 15 s</option><option value={30}>Rotation 30 s</option><option value={60}>Rotation 60 s</option><option value={0}>Vue fixe</option>
+            <select aria-label="Défilement des vues" value={rotation} onChange={(e) => setRotation(Number(e.target.value))}>
+              <option value={0}>Vue fixe</option><option value={30}>Faire défiler toutes les 30 s</option><option value={60}>Faire défiler toutes les minutes</option><option value={120}>Faire défiler toutes les 2 min</option>
             </select>
           )}
           <select aria-label="Disposition" value={layoutName} onChange={(e) => { const p = new URLSearchParams(params); if (e.target.value) p.set("layout", e.target.value); else p.delete("layout"); setParams(p); }}>
-            <option value="">Vues qui tournent</option>
+            <option value="">Vues standard</option>
             {Object.keys(layouts.data?.layouts ?? {}).map((n) => <option key={n} value={n}>Mur : {n}</option>)}
           </select>
           <label className="mon-check"><input type="checkbox" checked={sound} onChange={(e) => { setSound(e.target.checked); if (e.target.checked) beep(); }} /> Son des alertes</label>

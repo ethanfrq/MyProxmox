@@ -8,20 +8,45 @@ test("chaque vue s'affiche sans erreur", async ({ page }) => {
   const errors = watchErrors(page);
   await loginProxmox(page);
   await page.goto("/monitoring?rotation=0");
-  for (const name of ["Vue générale", "Machines", "Réseau", "Stockage et disques", "Sauvegardes et sécurité", "Historique 24 h / 7 j"]) {
-    await page.getByRole("navigation", { name: "Vues" }).getByRole("button", { name }).click();
+  for (const name of ["Vue d'ensemble", "Machines", "Machines en cartes", "Nœuds et cluster", "Réseau", "Stockage et disques", "Sauvegardes et sécurité", "Historique 24 h / 7 j"]) {
+    await page.getByRole("navigation", { name: "Vues" }).getByRole("button", { name, exact: true }).click();
     await expect(page.locator(".mon-card").first()).toBeVisible();
   }
   await expect(page.getByRole("region", { name: "Historique 7 jours" })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
-test("les vues tournent toutes seules", async ({ page }) => {
+test("nouveaux widgets : tâches, machines en tableau, réplication, Ceph", async ({ page }) => {
+  const errors = watchErrors(page);
   await loginProxmox(page);
-  await page.goto("/monitoring?rotation=15");
-  await page.getByRole("combobox", { name: "Changement de vue" }).selectOption("15");
-  await expect(page.locator(".mon-view.cur")).toHaveText(/Vue générale/);
-  await expect(page.locator(".mon-view.cur")).toHaveText(/Machines/, { timeout: 20_000 });
+  await page.goto("/monitoring?rotation=0&vue=general");
+  await expect(page.getByRole("region", { name: "Tâches" })).toContainText("Échecs sur 24 h");
+  const vues = page.getByRole("navigation", { name: "Vues" });
+  await vues.getByRole("button", { name: "Machines", exact: true }).click();
+  const table = page.getByRole("region", { name: "Machines (tableau)" });
+  await expect(table).toContainText("home-assistant");
+  await expect(table).toContainText("E/S disque");
+  await expect(page.getByRole("region", { name: "Plus gros consommateurs" })).toContainText("Processeur");
+  await vues.getByRole("button", { name: "Nœuds et cluster" }).click();
+  await expect(page.getByRole("region", { name: "Réplication" })).toContainText("vaultwarden");
+  await expect(page.getByRole("region", { name: "Ceph" })).toContainText("OSD actifs");
+  expect(errors).toEqual([]);
+});
+
+test("pas de défilement par défaut, et défilement à la demande", async ({ page }) => {
+  await loginProxmox(page);
+  await page.goto("/monitoring");
+  await expect(page.getByRole("combobox", { name: "Défilement des vues" })).toHaveValue("0");
+  await expect(page.locator(".mon-view.cur")).toHaveText(/Vue d'ensemble/);
+  await page.waitForTimeout(2500);
+  await expect(page.locator(".mon-view.cur")).toHaveText(/Vue d'ensemble/);
+  // La vue choisie est gardée au prochain chargement
+  await page.getByRole("navigation", { name: "Vues" }).getByRole("button", { name: "Réseau" }).click();
+  await page.reload();
+  await expect(page.locator(".mon-view.cur")).toHaveText(/Réseau/);
+  // Défilement demandé par l'adresse (écran de TV)
+  await page.goto("/monitoring?rotation=3&vue=general");
+  await expect(page.locator(".mon-view.cur")).toHaveText(/Machines/, { timeout: 8_000 });
 });
 
 test("un administrateur crée un mur, choisi par ?layout=", async ({ page }) => {
@@ -31,10 +56,10 @@ test("un administrateur crée un mur, choisi par ?layout=", async ({ page }) => 
   await page.getByRole("button", { name: "Créer un mur" }).click();
   const editor = page.getByRole("dialog", { name: "Disposition du mur" });
   await editor.getByRole("textbox").fill("test-mur");
-  await editor.getByRole("combobox", { name: "Ajouter un widget" }).selectOption("backups");
+  await editor.getByRole("combobox", { name: "Ajouter un widget" }).selectOption("ceph");
   await editor.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page).toHaveURL(/layout=test-mur/);
-  await expect(page.getByRole("region", { name: "Sauvegardes" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ceph" })).toBeVisible();
   await page.goto("/monitoring?layout=salon");
   await expect(page.getByRole("region", { name: "Machines" })).toBeVisible();
   expect(errors).toEqual([]);

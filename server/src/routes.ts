@@ -46,15 +46,18 @@ function normalizeUrl(raw = "") {
   return `${parsed.protocol}//${parsed.host}`;
 }
 
-async function isAdmin(call: ReturnType<typeof ticketCall>, username: string) {
-  if (username === "root@pam") return true;
+/** Droits sur « / » : administrateur (Sys.Modify) et lecture de tout (Sys.Audit, rôle PVEAuditor). */
+async function rootRights(call: ReturnType<typeof ticketCall>, username: string) {
+  if (username === "root@pam") return { admin: true, auditor: true };
   try {
     const perms = await call("GET", "/access/permissions", { path: "/" });
-    return !!perms?.["/"]?.["Sys.Modify"];
+    const p = perms?.["/"] ?? {};
+    return { admin: !!p["Sys.Modify"], auditor: !!p["Sys.Audit"] || !!p["Sys.Modify"] };
   } catch {
-    return false;
+    return { admin: false, auditor: false };
   }
 }
+const isAdmin = async (call: ReturnType<typeof ticketCall>, username: string) => (await rootRights(call, username)).admin;
 
 // ── Informations publiques ──────────────────────────────────────────
 api.get("/status", wrap(async (req) => {
@@ -118,8 +121,8 @@ api.post("/auth/login", wrap(async (req, res) => {
     const auth = await login({ url: c.pve?.url ?? "", insecureTls: !!c.pve?.insecureTls }, full, password, otp);
     if ("needOtp" in auth) return { needOtp: true };
     const call = ticketCall(auth.ticket, auth.csrf);
-    const admin = DEMO ? true : await isAdmin(call, auth.username);
-    const s = createSession({ kind: "proxmox", username: auth.username, ticket: auth.ticket, csrf: auth.csrf, admin });
+    const { admin, auditor } = DEMO ? { admin: true, auditor: true } : await rootRights(call, auth.username);
+    const s = createSession({ kind: "proxmox", username: auth.username, ticket: auth.ticket, csrf: auth.csrf, admin, auditor });
     setCookie(res, s.id);
     await logActivity({ actor: auth.username, action: "connexion", target: clientIp(req), result: "ok" });
     return { username: auth.username, admin };
@@ -211,6 +214,10 @@ async function monitoringAccess(req: Request) {
   if (!s) throw bad("Clé de monitoring manquante.", 401);
   // Les comptes MyProxmox et le lien secret partagent le cache du jeton de service
   if (s.kind === "local") return { call: serviceCall(), id: "service", admin: false };
+  // Un compte Proxmox qui peut déjà tout lire (Sys.Audit sur « / », rôle PVEAuditor) voit l'écran
+  // complet par le compte de service : pas besoin d'être administrateur pour tout voir.
+  // L'écran ne fait que lire ; les droits du compte de service ne servent à rien d'autre ici.
+  if (s.auditor || s.admin) return { call: serviceCall(), id: "service", admin: s.admin };
   return { call: ticketCall(s.ticket, s.csrf), id: `pve:${s.username}`, admin: s.admin };
 }
 
