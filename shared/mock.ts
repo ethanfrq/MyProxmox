@@ -46,7 +46,10 @@ interface Task {
   log: string[];
 }
 
+interface HaResource { sid: string; state: string; group?: string; comment?: string }
+
 interface State {
+  ha: HaResource[];
   guests: Guest[];
   tasks: Task[];
   content: Record<string, Any[]>;
@@ -114,6 +117,7 @@ function init(): State {
   mk("vzstart", "106", 3600 * 30);
   mk("aptupdate", NODE, 3600 * 31);
   return {
+    ha: [{ sid: "vm:101", state: "started", comment: "Domotique toujours disponible" }, { sid: "ct:106", state: "started" }],
     guests,
     tasks,
     load: 0.12,
@@ -170,9 +174,17 @@ function resource(x: Guest) {
     id: `${x.type}/${x.vmid}`, type: x.type, node: NODE, vmid: x.vmid, name: x.name, status: x.status, tags: x.tags, pool: x.pool,
     cpu: run ? x.cpu : 0, maxcpu: x.cores, mem: run ? Math.round(x.memory * MB * (0.32 + x.cpu)) : 0, maxmem: x.memory * MB,
     disk: x.type === "lxc" ? Math.round(x.disk * GB * (0.25 + (x.vmid % 5) / 10)) : 0, maxdisk: x.disk * GB,
-    uptime: run ? now() - x.started : 0, netin: run ? x.vmid * 1.7e7 : 0, netout: run ? x.vmid * 6e6 : 0,
-    diskread: run ? x.vmid * 3e7 : 0, diskwrite: run ? x.vmid * 1e7 : 0, template: 0,
+    uptime: run ? now() - x.started : 0, ...counters(x), template: 0,
   };
+}
+
+/** Compteurs cumulés (octets) qui avancent avec le temps, avec un peu de bruit. */
+function counters(x: Guest) {
+  if (x.status !== "running") return { netin: 0, netout: 0, diskread: 0, diskwrite: 0 };
+  const t = Date.now() / 1000 - x.started;
+  // Intégrale de rate × (1 + 0,6 cos) : un débit qui varie doucement entre 0,4 et 1,6 × rate
+  const f = (rate: number) => Math.round(rate * (t + 0.6 * 40 * Math.sin(t / 40 + x.vmid)));
+  return { netin: f(((x.vmid % 5) + 1) * 42000), netout: f(((x.vmid % 3) + 1) * 15000), diskread: f(((x.vmid % 4) + 1) * 90000), diskwrite: f(((x.vmid % 6) + 1) * 30000) };
 }
 
 function nodeStatus() {
@@ -200,8 +212,10 @@ function rrd(kind: "node" | "guest" | "storage", x?: Guest, timeframe = "hour", 
   const step = timeframe === "week" ? 1800 : timeframe === "day" ? 600 : 60;
   const count = 70;
   const pts: Any[] = [];
-  const base = kind === "node" ? nodeStatus().cpu : x && x.status === "running" ? x.cpu : 0;
+  const ns = kind === "node" ? nodeStatus() : null;
+  const base = ns ? ns.cpu : x && x.status === "running" ? x.cpu : 0;
   const maxmem = kind === "node" ? 64 * GB : (x?.memory ?? 512) * MB;
+  const memBase = ns ? ns.mem / maxmem : 0.33;
   for (let i = count; i >= 0; i--) {
     const on = kind !== "guest" || x?.status === "running";
     const time = now() - i * step;
@@ -217,7 +231,7 @@ function rrd(kind: "node" | "guest" | "storage", x?: Guest, timeframe = "hour", 
       cpu: on ? Math.max(0, base + Math.sin(i / 6) * 0.04 + (Math.random() - 0.5) * 0.03) : 0,
       iowait: on ? 0.002 + Math.random() * 0.01 : 0,
       loadavg: on ? 1.2 + Math.sin(i / 9) * 0.4 : 0,
-      memused: on ? maxmem * (0.33 + Math.sin(i / 11) * 0.03) : 0,
+      memused: on ? maxmem * (memBase + Math.sin(i / 11) * 0.02) : 0,
       memtotal: maxmem,
       mem: on ? maxmem * (0.35 + Math.sin(i / 11) * 0.05) : 0,
       maxmem,
@@ -225,6 +239,11 @@ function rrd(kind: "node" | "guest" | "storage", x?: Guest, timeframe = "hour", 
       netout: on ? 40000 + Math.random() * 150000 : 0,
       swapused: kind === "node" ? 0.2 * GB : 0,
       swaptotal: kind === "node" ? 8 * GB : 0,
+      ...(kind === "node" ? {
+        pressurecpusome: on ? 0.8 + Math.abs(Math.sin(i / 7)) * 2 : 0,
+        pressureiosome: on ? 0.3 + Math.random() * 0.6 : 0,
+        pressurememorysome: 0.05,
+      } : {}),
     });
   }
   return pts;
@@ -295,7 +314,13 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   if (route === "GET /cluster/backup") return [{ id: "backup-nightly", enabled: 1, schedule: "02:00", storage: "backup-nas", vmid: "100,101,102,104,106", mode: "snapshot", compress: "zstd", "next-run": now() + 8 * 3600 }];
   if (route === "GET /cluster/backup-info/not-backed-up") return s.guests.filter((x) => ![100, 101, 102, 104, 106].includes(x.vmid)).map((x) => ({ vmid: x.vmid, name: x.name, type: x.type }));
   if (route === "GET /cluster/firewall/options") return { enable: 0, policy_in: "DROP", policy_out: "ACCEPT" };
-  if (route === "GET /cluster/ha/status/current") return [{ id: "quorum", type: "quorum", status: "OK", quorate: 1 }];
+  if (route === "GET /cluster/ha/status/current") {
+    return [
+      { id: "quorum", type: "quorum", status: "OK", quorate: 1, node: NODE },
+      ...s.ha.map((h) => ({ id: `service:${h.sid}`, type: "service", sid: h.sid, state: h.state, node: NODE, status: `${h.state} (${NODE})` })),
+    ];
+  }
+  if (route === "GET /cluster/ha/resources") return s.ha.map((h) => ({ sid: h.sid, type: h.sid.split(":")[0], state: h.state, group: h.group, comment: h.comment, max_restart: 1, max_relocate: 1 }));
 
   if (seg[0] !== "nodes") fail(501, `Chemin non simulé dans la démo : ${route}`);
   if (seg.length === 1 && method === "GET") return [{ node: NODE, status: "online", ...nodeStatus(), level: "", ssl_fingerprint: "AB:CD" }];
@@ -307,7 +332,7 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
     const n = nodeStatus();
     return {
       cpu: n.cpu, wait: 0.004, uptime: n.uptime, loadavg: [(s.load * 10).toFixed(2), "1.12", "0.98"],
-      memory: { used: n.mem, total: n.maxmem, free: n.maxmem - n.mem },
+      memory: { used: n.mem, total: n.maxmem, free: Math.round((n.maxmem - n.mem) * 0.45), available: n.maxmem - n.mem },
       swap: { used: 0.2 * GB, total: 8 * GB, free: 7.8 * GB },
       rootfs: { used: n.disk, total: n.maxdisk, avail: n.maxdisk - n.disk },
       ksm: { shared: 1.4 * GB },
@@ -328,6 +353,12 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
       { iface: "vmbr1", type: "bridge", active: 1, autostart: 1, method: "static", cidr: "192.168.50.1/24", bridge_ports: "", comments: "Lab isolé" },
     ];
   }
+  if (r === "GET /netstat") {
+    return s.guests.filter((x) => x.status === "running").map((x) => {
+      const c = counters(x);
+      return { dev: `${x.type === "qemu" ? "tap" : "veth"}${x.vmid}i0`, vmid: String(x.vmid), in: String(c.netin), out: String(c.netout) };
+    });
+  }
   if (r === "GET /dns") return { search: "maison.lan", dns1: "10.0.1.53", dns2: "1.1.1.1" };
   if (r === "GET /time") return { timezone: "Europe/Paris", localtime: now() + 3600, time: now() };
   if (r === "GET /services") {
@@ -344,6 +375,9 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
     ];
   }
   if (r === "GET /disks/smart") {
+    if (String(p.disk).includes("nvme")) {
+      return { health: "PASSED", type: "text", text: "SMART/Health Information (NVMe Log 0x02)\nCritical Warning: 0x00\nTemperature: 44 Celsius\nAvailable Spare: 100%\nPercentage Used: 9%\nData Units Read: 41,234,112\nData Units Written: 38,102,554\nPower On Hours: 9,812\nUnsafe Shutdowns: 12\nMedia and Data Integrity Errors: 0" };
+    }
     const failed = String(p.disk) === "/dev/sdb";
     return {
       health: failed ? "FAILED" : "PASSED", type: "ata",

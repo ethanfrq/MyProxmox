@@ -1,7 +1,9 @@
 // « Serveur » de démonstration qui tourne dans le navigateur (version Vercel).
 // Il répond aux mêmes routes que le vrai serveur, avec le faux Proxmox partagé.
 import { mockRequest } from "../../../shared/mock";
-import { backupStatus, inventory, monitoringSnapshot, overview, security, serverHealth, storageInsights } from "../../../shared/insights";
+import { backupStatus, inventory, overview, security, serverHealth, storageInsights } from "../../../shared/insights";
+import { monitoring } from "../../../shared/monitoring";
+import { normalizeLayout, type MonLayout } from "../../../shared/layouts";
 import { collect, evaluate } from "../../../shared/alerts";
 import { DEFAULT_MODULES, DEFAULT_RULES, type Alert, type Call, type LocalRole, type LocalUserInfo, type Me, type Notification, type PublicSettings } from "../../../shared/types";
 
@@ -31,7 +33,17 @@ const pub = ({ password, ...u }: (typeof localUsers)[number]): LocalUserInfo => 
 const findLocal = (id: string) => localUsers.find((u) => u.id === id) ?? fail(404, "Compte introuvable.");
 let alerts: (Alert & { since: string })[] = [];
 const notifications: Notification[] = [];
-const activity: any[] = [];
+const activity: any[] = [
+  { at: new Date(Date.now() - 1800000).toISOString(), actor: "mcp:Claude Desktop", action: "etat_general", target: "-", result: "ok" },
+  { at: new Date(Date.now() - 900000).toISOString(), actor: "root@pam", action: "POST /qemu/107/snapshot", target: "/nodes/pve/qemu/107/snapshot", result: "ok" },
+];
+// Dispositions du mode « mur » (démo : une disposition « salon » prête)
+const layouts: Record<string, MonLayout> = {
+  salon: normalizeLayout("salon", { widgets: [
+    { id: "kpis", w: 12, h: 1 }, { id: "guests", w: 8, h: 3 }, { id: "alerts", w: 4, h: 2 }, { id: "activity", w: 4, h: 1 },
+    { id: "storage", w: 6, h: 2 }, { id: "net-history", w: 6, h: 2 },
+  ] }),
+};
 const settings: PublicSettings = {
   pveUrl: "https://10.0.1.101:8006",
   insecureTls: true,
@@ -122,8 +134,9 @@ export async function demoApi(method: string, url: string, body: any = {}, query
   }
   if (path === "/monitoring") {
     await ensureAlerts();
-    return { ...(await monitoringSnapshot(call)), alerts };
+    return { ...(await monitoring(call, "service", activity)), alerts };
   }
+  if (path === "/monitoring/layouts") return { layouts, canEdit: loggedIn && !localId };
   if (!loggedIn) fail(401, "Connecte-toi (n'importe quel identifiant fonctionne dans la démo).");
   const local = localId ? localUsers.find((u) => u.id === localId) : undefined;
   if (path === "/auth/me") {
@@ -143,6 +156,16 @@ export async function demoApi(method: string, url: string, body: any = {}, query
     if (path === "/auth/local/password") return { done: true };
   }
   // Comptes MyProxmox : gestion par l'administrateur
+  if (path.startsWith("/monitoring-layouts/")) {
+    if (local) fail(403, "Réservé aux comptes Proxmox qui ont le droit Sys.Modify sur « / ».");
+    const name = decodeURIComponent(path.split("/").pop()!);
+    if (method === "DELETE") delete layouts[name];
+    else {
+      const l = normalizeLayout(name, body);
+      layouts[l.name] = l;
+    }
+    return { layouts };
+  }
   if (local && path.startsWith("/local-users")) fail(403, "Réservé aux comptes Proxmox qui ont le droit Sys.Modify sur « / ».");
   if (path === "/local-users" && method === "GET") return localUsers.map(pub);
   if (path === "/local-users" && method === "POST") {

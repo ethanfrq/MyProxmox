@@ -153,7 +153,29 @@ Le tutoriel pas à pas, avec des exemples de questions, est dans [docs/MCP.md](d
 
 ## Écran de monitoring
 
-Dans **Paramètres > Écran de monitoring**, crée un lien secret et ouvre-le sur la TV (F11 pour le plein écran). L'écran se rafraîchit toutes les 5 secondes, garde l'affichage allumé, passe au rouge quand une alerte critique arrive et ne propose aucun bouton d'action. Il fonctionne sans compte Proxmox ; un nouveau lien désactive l'ancien.
+Dans **Paramètres > Écran de monitoring**, crée un lien secret et ouvre-le sur la TV (F11 pour le plein écran). L'écran est en lecture seule, garde l'affichage allumé, se recharge toutes les 6 h et reste lisible de loin en 1080p, 1440p et 4K (et sur une tablette en portrait). Un nouveau lien désactive l'ancien.
+
+Ce qu'il affiche :
+
+| Vue | Contenu |
+|---|---|
+| Vue générale | Chiffres clés, processeur (charge 1/5/15, attente disque, pression PSI), mémoire (utilisée, cache, libre, KSM, swap), alertes actives avec leur durée, nœuds (version, noyau, disque système, services critiques, mises à jour), stockage |
+| Machines | Toutes les VM et conteneurs : statut, CPU avec mini graphe, RAM, débit réseau, uptime, IP, tags ; tri au choix, regroupement par tag ou par nœud |
+| Réseau | Débit par pont et total des interfaces physiques, machines les plus actives, débit sur 24 h, quorum et ressources HA, activité en direct (tâches Proxmox, actions faites via MyProxmox et le MCP) |
+| Stockage et disques | Occupation, date estimée de remplissage, stockages hors ligne, santé SMART, usure des SSD, température, lectures et écritures, pools ZFS |
+| Sauvegardes et sécurité | Dernière et prochaine exécution de chaque sauvegarde planifiée, machines non couvertes, échecs de connexion sur 24 h, certificats qui expirent |
+| Historique | CPU, RAM, réseau, attente disque et charge sur 24 h et 7 jours |
+
+Les vues tournent toutes seules (15, 30 ou 60 s, ou vue fixe), avec une barre de progression. En alerte critique, le bandeau devient rouge et pulse, le widget concerné est encadré, et un son peut prévenir (désactivé par défaut, à activer écran par écran). Si les données ne sont plus fraîches, l'écran l'affiche clairement.
+
+**Mode mur** : un administrateur choisit les widgets, leur ordre et leur taille sur une grille de 12 colonnes (bouton « Créer un mur », glisser-déposer). Chaque disposition a un nom et s'ouvre avec `?layout=nom`, par exemple `/monitoring?key=…&layout=salon`. Les dispositions sont enregistrées dans `data/monitoring-layouts.json`.
+
+Côté performances, l'écran fait un seul appel à `/api/monitoring` toutes les 5 s ; l'historique, SMART, les sauvegardes et la sécurité sont gardés en cache par le serveur et rafraîchis toutes les 1 à 15 minutes.
+
+| | |
+|---|---|
+| ![Machines](docs/images/monitoring-machines.png) | ![Réseau](docs/images/monitoring-reseau.png) |
+| ![Stockage et disques](docs/images/monitoring-stockage.png) | ![Historique](docs/images/monitoring-historique.png) |
 
 Tu peux aussi donner à quelqu'un un **compte MyProxmox** (voir plus bas) au rôle « monitoring » : il se connecte et arrive directement sur cet écran.
 

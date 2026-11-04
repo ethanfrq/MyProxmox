@@ -19,7 +19,9 @@ import { newTotpSecret, otpauthUri, verifyTotp } from "./totp";
 import { activeAlerts, engineStatus, runOnce } from "./engine";
 import { send } from "./notify";
 import { addNotification } from "./config";
-import { backupStatus, inventory, monitoringSnapshot, overview, security, serverHealth, storageInsights } from "../../shared/insights";
+import { backupStatus, inventory, overview, security, serverHealth, storageInsights } from "../../shared/insights";
+import { monitoring } from "../../shared/monitoring";
+import { deleteLayout, getLayouts, saveLayout } from "./layouts";
 import type { Channel, McpLevel, Me, PublicSettings, RegistrationMode } from "../../shared/types";
 
 export const api = Router();
@@ -197,21 +199,40 @@ api.post("/auth/local/register", wrap(async (req) => {
 }));
 
 // ── Écran de monitoring : clé en lecture seule OU session ───────────
-api.get("/monitoring", wrap(async (req) => {
+async function monitoringAccess(req: Request) {
   const c = getConfig();
   if (!c.modules.monitoring) throw bad("Module monitoring désactivé.", 404);
   const key = String(req.query.key ?? "");
-  let call;
   if (key) {
     if (!c.monitoringKeyHash || !sameHash(key, c.monitoringKeyHash)) throw bad("Clé de monitoring invalide.", 401);
-    call = serviceCall();
-  } else {
-    const s = await getSession(req);
-    if (!s) throw bad("Clé de monitoring manquante.", 401);
-    call = s.kind === "local" ? serviceCall() : ticketCall(s.ticket, s.csrf);
+    return { call: serviceCall(), id: "service", admin: false };
   }
-  const snap = await monitoringSnapshot(call);
-  return { ...snap, alerts: c.modules.alerts ? activeAlerts() : [] };
+  const s = await getSession(req);
+  if (!s) throw bad("Clé de monitoring manquante.", 401);
+  // Les comptes MyProxmox et le lien secret partagent le cache du jeton de service
+  if (s.kind === "local") return { call: serviceCall(), id: "service", admin: false };
+  return { call: ticketCall(s.ticket, s.csrf), id: `pve:${s.username}`, admin: s.admin };
+}
+
+api.get("/monitoring", wrap(async (req) => {
+  const { call, id } = await monitoringAccess(req);
+  const snap = await monitoring(call, id, getActivity().slice(0, 40));
+  return { ...snap, alerts: getConfig().modules.alerts ? activeAlerts() : [] };
+}));
+
+// Dispositions nommées du mode « mur » (lecture pour tout écran autorisé)
+api.get("/monitoring/layouts", wrap(async (req) => {
+  const { admin } = await monitoringAccess(req);
+  return { layouts: getLayouts(), canEdit: admin };
+}));
+api.put("/monitoring-layouts/:name", requireSession, requireAdmin, wrap(async (req) => {
+  const layout = await saveLayout(String(req.params.name), req.body ?? {});
+  await logActivity({ actor: req.session!.username, action: "disposition de monitoring enregistrée", target: layout.name, result: "ok" });
+  return { layouts: getLayouts() };
+}));
+api.delete("/monitoring-layouts/:name", requireSession, requireAdmin, wrap(async (req) => {
+  await deleteLayout(String(req.params.name));
+  return { layouts: getLayouts() };
 }));
 
 // ── Tout ce qui suit demande d'être connecté ────────────────────────

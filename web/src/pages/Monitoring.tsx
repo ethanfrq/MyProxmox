@@ -1,11 +1,18 @@
-// Écran de monitoring : lecture seule, rafraîchi toutes les 5 secondes, pensé
-// pour rester affiché en permanence sur une TV ou un second écran.
-import { useEffect, useState } from "react";
+// Écran de monitoring : lecture seule, données vives toutes les 5 s, pensé pour rester
+// affiché sur une TV. Deux modes :
+//  - vues qui tournent (Vue générale, Machines, Réseau...) ;
+//  - « mur » : disposition nommée choisie par ?layout=nom, éditable par un administrateur.
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Meter } from "../components/ui";
-import { Sparkline } from "../components/Sparkline";
 import { api, usePoll } from "../lib/api";
-import { bytes, date, pct, rate, uptime, TASK_LABEL } from "../../../shared/format";
+import { uptime } from "../../../shared/format";
+import { VIEWS, WIDGETS, WIDGET_IDS, type MonLayout, type WidgetId, type WidgetPlace } from "../../../shared/layouts";
+import { RENDER, widgetsForAlert, type Ctx, type GuestGroup, type GuestSort, type Snap } from "./monitoring/widgets";
+
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } },
+};
 
 function Clock() {
   const [now, setNow] = useState(new Date());
@@ -21,12 +28,130 @@ function Clock() {
   );
 }
 
+/** Petit bip à deux tons, joué quand une nouvelle alerte critique apparaît. */
+function beep() {
+  try {
+    const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
+    const ac = new Ctx();
+    [880, 660].forEach((f, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.15, ac.currentTime + i * 0.25);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.25 + 0.22);
+      o.connect(g).connect(ac.destination);
+      o.start(ac.currentTime + i * 0.25);
+      o.stop(ac.currentTime + i * 0.25 + 0.24);
+    });
+    setTimeout(() => ac.close(), 800);
+  } catch {
+    /* pas de son disponible */
+  }
+}
+
+function Widget({ place, d, ctx, alarm, onCtx }: { place: WidgetPlace; d: Snap; ctx: Ctx; alarm: boolean; onCtx: (c: Partial<Ctx>) => void }) {
+  return (
+    <section className={`mon-card mw-${place.w} mh-${place.h} ${alarm ? "alarm" : ""}`} aria-label={WIDGETS[place.id]}>
+      <div className="mon-card-head">
+        <h3>{WIDGETS[place.id]}</h3>
+        {place.id === "guests" && (
+          <span className="mon-tools">
+            <select aria-label="Trier les machines" value={ctx.sort} onChange={(e) => onCtx({ sort: e.target.value as GuestSort })}>
+              <option value="status">En marche d'abord</option><option value="vmid">Par ID</option><option value="name">Par nom</option>
+              <option value="cpu">Par CPU</option><option value="mem">Par RAM</option><option value="net">Par réseau</option>
+            </select>
+            <select aria-label="Regrouper les machines" value={ctx.group} onChange={(e) => onCtx({ group: e.target.value as GuestGroup })}>
+              <option value="none">Sans regroupement</option><option value="tag">Par tag</option><option value="node">Par nœud</option>
+            </select>
+          </span>
+        )}
+      </div>
+      <div className="mon-card-body">{RENDER[place.id](d, ctx)}</div>
+    </section>
+  );
+}
+
+// ── Éditeur de disposition (administrateurs) ──────────────────────
+function LayoutEditor({ initial, name: initialName, onClose, onSaved }: { initial: WidgetPlace[]; name: string; onClose: () => void; onSaved: (name: string) => void }) {
+  const [name, setName] = useState(initialName);
+  const [list, setList] = useState<WidgetPlace[]>(initial);
+  const [drag, setDrag] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const move = (from: number, to: number) => setList((l) => {
+    const n = [...l];
+    const [x] = n.splice(from, 1);
+    n.splice(to, 0, x);
+    return n;
+  });
+  const set = (i: number, patch: Partial<WidgetPlace>) => setList((l) => l.map((w, k) => (k === i ? { ...w, ...patch } : w)));
+  const save = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/api/monitoring-layouts/${encodeURIComponent(name)}`, { method: "PUT", body: { widgets: list } });
+      onSaved(name);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mon-editor" role="dialog" aria-label="Disposition du mur">
+      <div className="mon-editor-head">
+        <strong>Disposition du mur</strong>
+        <button type="button" onClick={onClose} aria-label="Fermer l'éditeur">×</button>
+      </div>
+      <label className="mon-editor-field">Nom (dans l&apos;adresse : ?layout=nom)
+        <input value={name} onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))} placeholder="salon" />
+      </label>
+      <p className="mon-sub">Glisse les lignes pour changer l&apos;ordre. Largeur sur 12 colonnes, hauteur en rangées.</p>
+      <ol className="mon-editor-list">
+        {list.map((w, i) => (
+          <li
+            key={`${w.id}-${i}`}
+            draggable
+            onDragStart={() => setDrag(i)}
+            onDragOver={(e) => { e.preventDefault(); if (drag !== null && drag !== i) { move(drag, i); setDrag(i); } }}
+            onDragEnd={() => setDrag(null)}
+            className={drag === i ? "dragging" : ""}
+          >
+            <span className="grip" aria-hidden>⋮⋮</span>
+            <span className="w-name">{WIDGETS[w.id]}</span>
+            <select aria-label={`Largeur de ${WIDGETS[w.id]}`} value={w.w} onChange={(e) => set(i, { w: Number(e.target.value) })}>
+              {[2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map((n) => <option key={n} value={n}>{n} col.</option>)}
+            </select>
+            <select aria-label={`Hauteur de ${WIDGETS[w.id]}`} value={w.h} onChange={(e) => set(i, { h: Number(e.target.value) })}>
+              {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} rang.</option>)}
+            </select>
+            <button type="button" aria-label={`Monter ${WIDGETS[w.id]}`} disabled={!i} onClick={() => move(i, i - 1)}>↑</button>
+            <button type="button" aria-label={`Retirer ${WIDGETS[w.id]}`} onClick={() => setList((l) => l.filter((_, k) => k !== i))}>×</button>
+          </li>
+        ))}
+      </ol>
+      <select aria-label="Ajouter un widget" value="" onChange={(e) => e.target.value && setList((l) => [...l, { id: e.target.value as WidgetId, w: 6, h: 2 }])}>
+        <option value="">+ Ajouter un widget</option>
+        {WIDGET_IDS.map((id) => <option key={id} value={id}>{WIDGETS[id]}</option>)}
+      </select>
+      {error && <div className="mon-editor-error">{error}</div>}
+      <div className="mon-editor-foot">
+        <button type="button" className="btn btn-sm" onClick={onClose}>Annuler</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy || !name || !list.length} onClick={save}>Enregistrer</button>
+      </div>
+    </div>
+  );
+}
+
 export function Monitoring() {
-  const [params] = useSearchParams();
-  const key = params.get("key") ?? undefined;
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const snap = usePoll(() => api("/api/monitoring", { query: { key } }), 5000, [key]);
+  const key = params.get("key") ?? undefined;
+  const layoutName = params.get("layout") ?? "";
+  const snap = usePoll(() => api<Snap>("/api/monitoring", { query: { key } }), 5000, [key]);
   const d = snap.data;
+  const layouts = usePoll(() => api<{ layouts: Record<string, MonLayout>; canEdit: boolean }>("/api/monitoring/layouts", { query: { key } }), 60000, [key]);
+
   // Sans lien secret, l'écran suit la session : on propose de se déconnecter
   const [viewer, setViewer] = useState<{ username: string; local: boolean } | null>(null);
   useEffect(() => {
@@ -37,6 +162,37 @@ export function Monitoring() {
     await api("/api/auth/logout", { method: "POST" }).catch(() => {});
     navigate(viewer?.local ? "/login?compte=local" : "/login", { replace: true });
   };
+
+  // Réglages propres à cet écran
+  const [rotation, setRotation] = useState(() => Number(params.get("rotation") ?? store.get("myproxmox-mon-rotation") ?? 30));
+  const [sound, setSound] = useState(() => store.get("myproxmox-mon-sound") === "on");
+  const [ctx, setCtx] = useState<Ctx>(() => ({ sort: (store.get("myproxmox-mon-sort") as GuestSort) || "status", group: (store.get("myproxmox-mon-group") as GuestGroup) || "none" }));
+  const [view, setView] = useState(() => Math.max(0, VIEWS.findIndex((v) => v.id === params.get("vue"))));
+  const [elapsed, setElapsed] = useState(0);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => store.set("myproxmox-mon-rotation", String(rotation)), [rotation]);
+  useEffect(() => store.set("myproxmox-mon-sound", sound ? "on" : "off"), [sound]);
+  const updateCtx = useCallback((c: Partial<Ctx>) => setCtx((o) => {
+    const n = { ...o, ...c };
+    store.set("myproxmox-mon-sort", n.sort);
+    store.set("myproxmox-mon-group", n.group);
+    return n;
+  }), []);
+
+  // Rotation des vues
+  const wall = layoutName ? layouts.data?.layouts[layoutName] : undefined;
+  useEffect(() => {
+    if (layoutName || !rotation || editing) return;
+    setElapsed(0);
+    const start = Date.now();
+    const id = setInterval(() => {
+      const e = (Date.now() - start) / 1000;
+      if (e >= rotation) {
+        setView((v) => (v + 1) % VIEWS.length);
+      } else setElapsed(e);
+    }, 250);
+    return () => clearInterval(id);
+  }, [view, rotation, layoutName, editing]);
 
   // Garde l'écran allumé, et recharge la page toutes les 6 h (mise à jour de l'app, mémoire)
   useEffect(() => {
@@ -52,35 +208,46 @@ export function Monitoring() {
     return () => { document.removeEventListener("visibilitychange", onVis); clearTimeout(reload); lock?.release?.(); };
   }, []);
 
+  // Son à l'arrivée d'une nouvelle alerte critique
+  const known = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!d) return;
+    const crit = new Set(d.alerts.filter((a) => a.level === "critical").map((a) => a.key));
+    if (known.current && sound && [...crit].some((k) => !known.current!.has(k))) beep();
+    known.current = crit;
+  }, [d, sound]);
+
+  const alarmed = useMemo(() => new Set((d?.alerts ?? []).filter((a) => a.level === "critical").flatMap((a) => widgetsForAlert(a.key))), [d]);
+
   if (!d) {
     return (
-      <div className="mon" style={{ placeItems: "center", gridTemplateRows: "1fr" }}>
-        <div style={{ textAlign: "center" }}>
-          <div className="brand" style={{ justifyContent: "center", fontSize: 22 }}><span className="brand-mark">P</span>MyProxmox</div>
-          <p style={{ color: "#aaa", marginTop: 16 }}>{snap.error ? (snap.error.includes("Clé") ? "Lien de monitoring invalide ou expiré. Crée un nouveau lien dans Paramètres." : `Connexion impossible : ${snap.error}`) : "Chargement…"}</p>
+      <div className="mon mon-wait">
+        <div>
+          <div className="brand"><span className="brand-mark">P</span>MyProxmox</div>
+          <p>{snap.error ? (snap.error.includes("Clé") ? "Lien de monitoring invalide ou expiré. Crée un nouveau lien dans Paramètres." : `Connexion impossible : ${snap.error}. L'écran réessaie tout seul.`) : "Chargement…"}</p>
         </div>
       </div>
     );
   }
 
-  const node = d.nodes[0];
-  const pts = node?.rrd ?? [];
-  const crit = d.alerts.filter((a: any) => a.level === "critical");
-  const warn = d.alerts.filter((a: any) => a.level === "warning");
+  const crit = d.alerts.filter((a) => a.level === "critical");
+  const warn = d.alerts.filter((a) => a.level === "warning");
   const level = crit.length ? "critical" : warn.length ? "warning" : "ok";
-  const guests = [...d.guests].sort((a: any, b: any) => (a.status === b.status ? a.vmid - b.vmid : a.status === "running" ? -1 : 1));
-  const stale = Date.now() - Date.parse(d.at) > 30000 || !!snap.error;
+  const ageS = Math.round((Date.now() - Date.parse(d.at)) / 1000);
+  const stale = ageS > 20 || !!snap.error;
+  const places = editing ? null : wall?.widgets ?? (layoutName ? null : VIEWS[view].widgets);
 
   return (
-    <div className="mon">
-      <div className="mon-head">
+    <div className={`mon ${level === "critical" ? "mon-critical" : ""}`}>
+      <header className="mon-head">
         <div className="brand"><span className="brand-mark">P</span>MyProxmox</div>
-        <div style={{ color: "#aaa" }}>
-          {d.nodes.map((n: any) => <span key={n.node} style={{ marginRight: 16 }}><span style={{ color: n.status === "online" ? "#6fd27a" : "#ff7b7b" }}>■</span> {n.node} · {n.status === "online" ? `en ligne depuis ${uptime(n.uptime)}` : "HORS LIGNE"}</span>)}
+        <div className="mon-nodes">
+          {d.nodes.map((n) => <span key={n.node}><i className={`dot ${n.status === "online" ? "ok" : "crit"}`} /> {n.node} · {n.status === "online" ? `en ligne depuis ${uptime(n.uptime)}` : "HORS LIGNE"}</span>)}
         </div>
-        <div className="row" style={{ marginLeft: "auto", gap: 18 }}>
-          <span className="small" style={{ color: stale ? "#ff9a9a" : "#777" }}>{stale ? "Données non mises à jour" : `Mis à jour ${new Date(d.at).toLocaleTimeString("fr-FR")}`}</span>
-          <button className="btn btn-sm btn-dark" style={{ borderColor: "#444" }} onClick={() => document.documentElement.requestFullscreen?.()}>Plein écran</button>
+        <div className="mon-head-right">
+          <span className={`mon-fresh ${stale ? "stale" : ""}`} role="status">
+            {stale ? `Données figées depuis ${ageS} s${snap.error ? ` : ${snap.error}` : ""}` : `Mis à jour à ${new Date(d.at).toLocaleTimeString("fr-FR")}`}
+          </span>
           {viewer && (
             <span className="mon-who">
               {viewer.local ? <Link to="/compte" title="Mon compte">{viewer.username}</Link> : <Link to="/">{viewer.username}</Link>}
@@ -89,85 +256,59 @@ export function Monitoring() {
           )}
           <Clock />
         </div>
-      </div>
+      </header>
 
-      <div className={`mon-banner ${level}`}>
+      <div className={`mon-banner ${level}`} role="alert">
         {level === "ok" ? "Tout fonctionne normalement" : `${crit.length ? `${crit.length} alerte(s) critique(s)` : ""}${crit.length && warn.length ? " · " : ""}${warn.length ? `${warn.length} point(s) à surveiller` : ""}`}
-        {level !== "ok" && <span style={{ fontWeight: 400, opacity: .9 }}>{(crit[0] ?? warn[0]).title}</span>}
+        {level !== "ok" && <span className="mon-banner-msg">{(crit[0] ?? warn[0]).title}</span>}
       </div>
 
-      <div className="mon-grid">
-        <div className="mon-card c3">
-          <h3>Processeur</h3>
-          <div className="mon-big">{pct(node?.cpu)}</div>
-          <div className="mon-sub">{node?.maxcpu} threads · {d.allocation.vcpuRun} vCPU actifs</div>
-          <div style={{ marginTop: 10 }}><Sparkline label="" values={pts.map((p: any) => p.cpu)} max={1} current="" height={56} /></div>
-        </div>
-        <div className="mon-card c3">
-          <h3>Mémoire</h3>
-          <div className="mon-big">{pct(node ? node.mem / node.maxmem : 0)}</div>
-          <div className="mon-sub">{bytes(node?.mem)} sur {bytes(node?.maxmem)}</div>
-          <div style={{ marginTop: 10 }}><Sparkline label="" values={pts.map((p: any) => p.memused ?? p.mem ?? 0)} max={pts[0]?.memtotal ?? pts[0]?.maxmem} current="" height={56} /></div>
-        </div>
-        <div className="mon-card c3">
-          <h3>Machines</h3>
-          <div className="mon-big">{d.counts.running}<span style={{ fontSize: 24, color: "#888" }}> / {d.counts.guests}</span></div>
-          <div className="mon-sub">{d.counts.vms} VM · {d.counts.containers} conteneurs</div>
-          <div className="mon-sub" style={{ marginTop: 14 }}>Tâches en échec (24 h) : <strong style={{ color: d.failedTasks ? "#ff9a9a" : "#9be3a4" }}>{d.failedTasks}</strong></div>
-        </div>
-        <div className="mon-card c3">
-          <h3>Réseau</h3>
-          <div className="mon-big" style={{ fontSize: 30 }}>↓ {rate(pts.at(-1)?.netin)}</div>
-          <div className="mon-big" style={{ fontSize: 30, marginTop: 6 }}>↑ {rate(pts.at(-1)?.netout)}</div>
-          <div style={{ marginTop: 10 }}><Sparkline label="" values={pts.map((p: any) => p.netin ?? 0)} current="" height={40} /></div>
-        </div>
+      <nav className="mon-views" aria-label="Vues">
+        {layoutName ? (
+          <span className="mon-view cur">Mur « {layoutName} »</span>
+        ) : VIEWS.map((v, i) => (
+          <button key={v.id} type="button" className={`mon-view ${i === view ? "cur" : ""}`} onClick={() => setView(i)} aria-current={i === view ? "true" : undefined}>
+            {v.title}
+            {i === view && rotation > 0 && <span className="mon-progress" style={{ "--p": `${Math.min(100, (elapsed / rotation) * 100)}%` } as CSSProperties} />}
+          </button>
+        ))}
+        <span className="mon-controls">
+          {!layoutName && (
+            <select aria-label="Changement de vue" value={rotation} onChange={(e) => setRotation(Number(e.target.value))}>
+              <option value={15}>Rotation 15 s</option><option value={30}>Rotation 30 s</option><option value={60}>Rotation 60 s</option><option value={0}>Vue fixe</option>
+            </select>
+          )}
+          <select aria-label="Disposition" value={layoutName} onChange={(e) => { const p = new URLSearchParams(params); if (e.target.value) p.set("layout", e.target.value); else p.delete("layout"); setParams(p); }}>
+            <option value="">Vues qui tournent</option>
+            {Object.keys(layouts.data?.layouts ?? {}).map((n) => <option key={n} value={n}>Mur : {n}</option>)}
+          </select>
+          <label className="mon-check"><input type="checkbox" checked={sound} onChange={(e) => { setSound(e.target.checked); if (e.target.checked) beep(); }} /> Son des alertes</label>
+          {layouts.data?.canEdit && <button type="button" onClick={() => setEditing(true)}>{layoutName ? "Modifier le mur" : "Créer un mur"}</button>}
+          <button type="button" onClick={() => document.documentElement.requestFullscreen?.()}>Plein écran</button>
+        </span>
+      </nav>
 
-        <div className="mon-card c8">
-          <h3>Machines</h3>
-          <div className="mon-guests">
-            {guests.map((g: any) => (
-              <div key={g.vmid} className={`mon-guest ${g.status}`}>
-                <div className="n">{g.name}</div>
-                <div className="s">{g.vmid} · {g.type === "qemu" ? "VM" : "CT"} · {g.status === "running" ? `${pct(g.cpu)} CPU · ${bytes(g.mem)}` : "arrêtée"}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mon-card c4">
-          <h3>Alertes</h3>
-          {d.alerts.length ? d.alerts.slice(0, 9).map((a: any) => (
-            <div key={a.key} className="mon-alert">
-              <span className={`lvl ${a.level}`}>{a.level === "critical" ? "Critique" : a.level === "warning" ? "Attention" : "Info"}</span>
-              <span>{a.title}</span>
-            </div>
-          )) : <div style={{ color: "#9be3a4" }}>Aucune alerte.</div>}
-          {d.alerts.length > 9 && <div className="mon-sub">… et {d.alerts.length - 9} autre(s)</div>}
-        </div>
+      {editing && (
+        <LayoutEditor
+          name={layoutName || "salon"}
+          initial={wall?.widgets ?? VIEWS[0].widgets}
+          onClose={() => setEditing(false)}
+          onSaved={(n) => {
+            setEditing(false);
+            layouts.refresh();
+            const p = new URLSearchParams(params);
+            p.set("layout", n);
+            setParams(p);
+          }}
+        />
+      )}
 
-        <div className="mon-card c4">
-          <h3>Stockage</h3>
-          <div className="stack">{d.storages.map((s: any) => <Meter key={s.id} label={s.storage} value={s.disk} max={s.maxdisk || 1} text={`${bytes(s.disk)} / ${bytes(s.maxdisk)}`} />)}</div>
-        </div>
-        <div className="mon-card c4">
-          <h3>Serveur</h3>
-          <div className="stack">
-            {node && <Meter label="Disque système" value={node.disk} max={node.maxdisk} text={`${bytes(node.disk)} / ${bytes(node.maxdisk)}`} />}
-            {node?.detail?.swap?.total > 0 && <Meter label="Swap" value={node.detail.swap.used} max={node.detail.swap.total} text={`${bytes(node.detail.swap.used)} / ${bytes(node.detail.swap.total)}`} />}
-            <Meter label="RAM allouée aux machines" value={d.allocation.vram} max={Math.max(d.allocation.vram, d.allocation.pram)} text={`${bytes(d.allocation.vram)} / ${bytes(d.allocation.pram)}`} />
-            <div className="mon-sub">Charge : <span className="mono">{node?.detail?.loadavg?.join("  ") ?? "-"}</span> · attente disque {pct(node?.detail?.wait ?? 0, 1)}</div>
-          </div>
-        </div>
-        <div className="mon-card c4">
-          <h3>Dernières tâches</h3>
-          {d.tasks.slice(0, 6).map((t: any) => (
-            <div key={t.upid} className="mon-alert">
-              <span className="mono" style={{ color: "#888", minWidth: 84 }}>{date(t.starttime).split(" ")[1] ?? date(t.starttime)}</span>
-              <span style={{ flex: 1 }}>{TASK_LABEL[t.type] ?? t.type} {t.id}</span>
-              <span style={{ color: !t.status ? "#ffc27a" : t.status === "OK" ? "#9be3a4" : "#ff9a9a" }}>{!t.status ? "en cours" : t.status === "OK" ? "OK" : "échec"}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {layoutName && !wall && !editing && (
+        <div className="mon-wait-inline">{layouts.data ? `Aucune disposition nommée « ${layoutName} ». Choisis-en une autre dans la liste, ou crée-la.` : "Chargement de la disposition…"}</div>
+      )}
+      <main className="mon-grid">
+        {(places ?? wall?.widgets ?? []).map((p, i) => <Widget key={`${p.id}-${i}`} place={p} d={d} ctx={ctx} alarm={alarmed.has(p.id)} onCtx={updateCtx} />)}
+      </main>
     </div>
   );
 }

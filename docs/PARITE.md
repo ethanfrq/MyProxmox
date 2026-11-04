@@ -13,14 +13,14 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 3 | 188 | 12 | 3 (lecture sauvegardes), 6 |
-| [Cluster](#cluster) | 60 | 3 | 48 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 20 | 131 | 22 | 3 (lecture), 5 |
+| [Cluster](#cluster) | 60 | 6 | 45 | 9 | 3 (quorum, HA, tâches), 6 |
+| [Nœud](#nœud) | 173 | 21 | 130 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 15 | 75 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 15 | 41 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 5 | 26 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 12 | 30 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 0 | 7 | 0 | 6 |
-| **Total** | **680** | **73** | **546** | **61** | |
+| **Total** | **680** | **77** | **542** | **61** | |
 
 ## Phases
 
@@ -316,7 +316,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Cluster
 
-60 points d'entrée : 3 faits, 48 à faire, 9 hors périmètre.
+60 points d'entrée : 6 faits, 45 à faire, 9 hors périmètre.
 
 ### Cluster : (racine)
 
@@ -375,7 +375,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/cluster/ha/groups/{group}` | Read ha group configuration. (deprecated in favor of HA rules) | Sys.Audit sur / | À faire |
 | PUT | `/cluster/ha/groups/{group}` | Update ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | À faire |
 | DELETE | `/cluster/ha/groups/{group}` | Delete ha group configuration. (deprecated in favor of HA rules) | Sys.Console sur / | À faire |
-| GET | `/cluster/ha/resources` | List HA resources. | Sys.Audit sur / | À faire |
+| GET | `/cluster/ha/resources` | List HA resources. | Sys.Audit sur / | Fait |
 | POST | `/cluster/ha/resources` | Create a new HA resource. | Sys.Console sur / | À faire |
 | GET | `/cluster/ha/resources/{sid}` | Read resource configuration. | Sys.Audit sur / | À faire |
 | PUT | `/cluster/ha/resources/{sid}` | Update resource configuration. | Sys.Console sur / | À faire |
@@ -389,7 +389,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | DELETE | `/cluster/ha/rules/{rule}` | Delete HA rule. | Sys.Console sur / | À faire |
 | GET | `/cluster/ha/status` | Directory index. | tout utilisateur connecté | Hors périmètre |
 | POST | `/cluster/ha/status/arm-ha` | Request re-arming the HA stack after it was disarmed. | Sys.Console sur / | À faire |
-| GET | `/cluster/ha/status/current` | Get HA manager status. | Sys.Audit sur / | À faire |
+| GET | `/cluster/ha/status/current` | Get HA manager status. | Sys.Audit sur / | Fait |
 | POST | `/cluster/ha/status/disarm-ha` | Request disarming the HA stack, releasing all watchdogs cluster-wide. | Sys.Console sur / | À faire |
 | GET | `/cluster/ha/status/manager_status` | Get full HA manager status, including LRM status. | Sys.Audit sur / | À faire |
 
@@ -425,7 +425,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/cluster/status` | Get cluster status information. | Sys.Audit sur / | À faire |
+| GET | `/cluster/status` | Get cluster status information. | Sys.Audit sur / | Fait |
 
 ### Cluster : tasks
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 20 faits, 131 à faire, 22 hors périmètre.
+173 points d'entrée : 21 faits, 130 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -626,7 +626,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/netstat` | Read tap/vm network device interface counters | Sys.Audit sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/netstat` | Read tap/vm network device interface counters | Sys.Audit sur /nodes/{node} | Fait |
 
 ### Nœud : network
 

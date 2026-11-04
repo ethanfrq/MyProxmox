@@ -345,21 +345,3 @@ export async function security(call: Call) {
     securityUpdates,
   };
 }
-
-// ── Écran de monitoring (lecture seule) ─────────────────────────────
-export async function monitoringSnapshot(call: Call) {
-  const ov = await overview(call);
-  const rrds = await Promise.all(ov.nodes.map((n: any) => (n.status === "online" ? safe(call("GET", `/nodes/${n.node}/rrddata`, { timeframe: "hour" }), [] as any[]) : Promise.resolve([]))));
-  return {
-    at: new Date().toISOString(),
-    nodes: ov.nodes.map((n: any, i: number) => ({ ...n, rrd: rrds[i].filter((p: any) => p.cpu !== undefined) })),
-    guests: ov.guests.map((g: any) => ({ vmid: g.vmid, name: g.name, type: g.type, status: g.status, cpu: g.cpu, maxcpu: g.maxcpu, mem: g.mem, maxmem: g.maxmem, uptime: g.uptime, node: g.node, netin: g.netin, netout: g.netout })),
-    storages: ov.storages,
-    counts: ov.counts,
-    allocation: ov.allocation,
-    storage: ov.storage,
-    top: ov.top,
-    tasks: ov.tasks.slice(0, 8),
-    failedTasks: ov.failedTasks.length,
-  };
-}
