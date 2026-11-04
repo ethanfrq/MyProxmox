@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 106 | 85 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 29 | 22 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 98 | 53 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
-| [Stockage](#stockage) | 33 | 23 | 8 | 2 | 3 (occupation), 7 |
-| [Accès](#accès) | 45 | 28 | 14 | 3 | 1 (permissions), 6 |
+| [Nœud](#nœud) | 173 | 99 | 51 | 23 | 3 (lecture), 5 |
+| [VM QEMU](#vm-qemu) | 97 | 64 | 23 | 10 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 44 | 11 | 7 | 4 |
+| [Stockage](#stockage) | 33 | 23 | 7 | 3 | 3 (occupation), 7 |
+| [Accès](#accès) | 45 | 28 | 13 | 4 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 5 | 2 | 0 | 6 |
-| **Total** | **680** | **388** | **231** | **61** | |
+| **Total** | **680** | **398** | **214** | **68** | |
 
 ## Phases
 
@@ -45,6 +45,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
   - `GET /access/ticket` : page factice pour les formateurs de l'API ;
   - `GET /cluster/config/apiversion` : version du protocole de jonction, lue par pvecm ;
   - `POST /nodes/{node}/execute` : exécution groupée d'appels, réservée aux outils ;
+  - `GET /nodes/{node}/rrd` : image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata ;
+  - `GET /nodes/{node}/qemu/{vmid}/rrd` : image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata ;
+  - `GET /nodes/{node}/lxc/{vmid}/rrd` : image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata ;
+  - `GET /nodes/{node}/storage/{storage}/rrd` : image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata ;
+  - `POST /access/vncticket` : ticket interne d'un ancien client VNC Java ; la console passe par vncproxy ;
+  - `POST /nodes/{node}/qemu/{vmid}/config` : variante asynchrone de PUT config, qui fait la même chose ;
+  - `POST /nodes/{node}/qemu/{vmid}/dbus-vmstate` : utilisé par Proxmox pendant les migrations ;
 - Les descriptions viennent de la doc officielle, en anglais. La colonne « Permission » résume le contrôle d'accès demandé par Proxmox.
 
 ## Datacenter
@@ -435,7 +442,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 98 faits, 53 à faire, 22 hors périmètre.
+173 points d'entrée : 99 faits, 51 à faire, 23 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -672,7 +679,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/rrd` | Read node RRD statistics (returns PNG) | Sys.Audit sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/rrd` | Read node RRD statistics (returns PNG) | Sys.Audit sur /nodes/{node} | Hors périmètre |
 
 ### Nœud : rrddata
 
@@ -761,7 +768,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/nodes/{node}/tasks` | Read task list for one node (finished tasks). | List task associated with the current user, or all task the user has 'Sys.Audit' permissions on /nodes/<node> (the <node> the task runs on). | Fait |
 | GET | `/nodes/{node}/tasks/{upid}` | (sans description) | tout utilisateur connecté | Hors périmètre |
-| DELETE | `/nodes/{node}/tasks/{upid}` | Stop a task. | The user needs 'Sys.Modify' permissions on '/nodes/<node>' if they aren't the owner of the task. | À faire |
+| DELETE | `/nodes/{node}/tasks/{upid}` | Stop a task. | The user needs 'Sys.Modify' permissions on '/nodes/<node>' if they aren't the owner of the task. | Fait |
 | GET | `/nodes/{node}/tasks/{upid}/log` | Read task log. | The user needs 'Sys.Audit' permissions on '/nodes/<node>' if they aren't the owner of the task. | Fait |
 | GET | `/nodes/{node}/tasks/{upid}/status` | Read task status. | The user needs 'Sys.Audit' permissions on '/nodes/<node>' if they are not the owner of the task. | Fait |
 
@@ -812,7 +819,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 57 faits, 33 à faire, 7 hors périmètre.
+97 points d'entrée : 64 faits, 23 à faire, 10 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -838,17 +845,17 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-thaw` | Execute fsfreeze-thaw. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/fstrim` | Execute fstrim. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-fsinfo` | Execute get-fsinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-host-name` | Execute get-host-name. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-host-name` | Execute get-host-name. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-memory-block-info` | Execute get-memory-block-info. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-memory-blocks` | Execute get-memory-blocks. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-osinfo` | Execute get-osinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-time` | Execute get-time. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-time` | Execute get-time. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-timezone` | Execute get-timezone. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-users` | Execute get-users. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-vcpus` | Execute get-vcpus. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/info` | Execute info. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/info` | Execute info. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces` | Execute network-get-interfaces. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/ping` | Execute ping. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/ping` | Execute ping. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/set-user-password` | Sets the password for the given user to the given password | VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/shutdown` | Execute shutdown. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/suspend-disk` | Execute suspend-disk. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
@@ -874,14 +881,14 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/qemu/{vmid}/config` | Get the virtual machine configuration with pending configuration changes applied. Set the 'current' parameter to get the current configuration instead. | VM.Audit sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/qemu/{vmid}/config` | Set virtual machine options (asynchronous API). | VM.Config.Disk ou VM.Config.CDROM ou VM.Config.CPU ou VM.Config.Memory ou VM.Config.Network ou VM.Config.HWType ou VM.Config.Options ou VM.Config.Cloudinit sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/config` | Set virtual machine options (asynchronous API). | VM.Config.Disk ou VM.Config.CDROM ou VM.Config.CPU ou VM.Config.Memory ou VM.Config.Network ou VM.Config.HWType ou VM.Config.Options ou VM.Config.Cloudinit sur /vms/{vmid} | Hors périmètre |
 | PUT | `/nodes/{node}/qemu/{vmid}/config` | Set virtual machine options (synchronous API) - You should consider using the POST method instead for any actions involving hotplug or storage allocation. | VM.Config.Disk ou VM.Config.CDROM ou VM.Config.CPU ou VM.Config.Memory ou VM.Config.Network ou VM.Config.HWType ou VM.Config.Options ou VM.Config.Cloudinit sur /vms/{vmid} | Fait |
 
 ### VM QEMU : dbus-vmstate
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/dbus-vmstate` | Control the dbus-vmstate helper for a given running VM. | VM.Migrate sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/dbus-vmstate` | Control the dbus-vmstate helper for a given running VM. | VM.Migrate sur /vms/{vmid} | Hors périmètre |
 
 ### VM QEMU : feature
 
@@ -970,7 +977,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/qemu/{vmid}/rrd` | Read VM RRD statistics (returns PNG) | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/rrd` | Read VM RRD statistics (returns PNG) | VM.Audit sur /vms/{vmid} | Hors périmètre |
 
 ### VM QEMU : rrddata
 
@@ -1009,12 +1016,12 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/qemu/{vmid}/status` | Directory index | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/qemu/{vmid}/status/current` | Get virtual machine status. | VM.Audit sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/status/reboot` | Reboot the VM by shutting it down, and starting it again. Applies pending changes. | VM.PowerMgmt sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/qemu/{vmid}/status/reset` | Reset virtual machine. | VM.PowerMgmt sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/status/resume` | Resume virtual machine. | VM.PowerMgmt sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/status/reset` | Reset virtual machine. | VM.PowerMgmt sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/status/resume` | Resume virtual machine. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/status/shutdown` | Shutdown virtual machine. This is similar to pressing the power button on a physical machine. This will send an ACPI event for the guest OS, which should then proceed to a clean shutdown. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/status/start` | Start virtual machine. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/status/stop` | Stop virtual machine. The qemu process will exit immediately. This is akin to pulling the power plug of a running computer and may damage the VM data. | VM.PowerMgmt sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/qemu/{vmid}/status/suspend` | Suspend virtual machine. | VM.PowerMgmt sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/status/suspend` | Suspend virtual machine. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 
 ### VM QEMU : template
 
@@ -1048,7 +1055,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Conteneur LXC
 
-62 points d'entrée : 42 faits, 14 à faire, 6 hors périmètre.
+62 points d'entrée : 44 faits, 11 à faire, 7 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1159,7 +1166,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/lxc/{vmid}/rrd` | Read VM RRD statistics (returns PNG) | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/rrd` | Read VM RRD statistics (returns PNG) | VM.Audit sur /vms/{vmid} | Hors périmètre |
 
 ### Conteneur LXC : rrddata
 
@@ -1192,11 +1199,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/lxc/{vmid}/status` | Directory index | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/lxc/{vmid}/status/current` | Get virtual machine status. | VM.Audit sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/lxc/{vmid}/status/reboot` | Reboot the container by shutting it down, and starting it again. Applies pending changes. | VM.PowerMgmt sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/lxc/{vmid}/status/resume` | Resume the container. | VM.PowerMgmt sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/status/resume` | Resume the container. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/lxc/{vmid}/status/shutdown` | Shutdown the container. This will trigger a clean shutdown of the container, see lxc-stop(1) for details. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/lxc/{vmid}/status/start` | Start the container. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/lxc/{vmid}/status/stop` | Stop the container. This will abruptly stop all processes running in the container. | VM.PowerMgmt sur /vms/{vmid} | Fait |
-| POST | `/nodes/{node}/lxc/{vmid}/status/suspend` | Suspend the container. This is experimental. | VM.PowerMgmt sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/status/suspend` | Suspend the container. This is experimental. | VM.PowerMgmt sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : template
 
@@ -1224,7 +1231,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Stockage
 
-33 points d'entrée : 23 faits, 8 à faire, 2 hors périmètre.
+33 points d'entrée : 23 faits, 7 à faire, 3 hors périmètre.
 
 ### Stockage : (racine)
 
@@ -1296,7 +1303,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/storage/{storage}/rrd` | Read storage RRD statistics (returns PNG). | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | À faire |
+| GET | `/nodes/{node}/storage/{storage}/rrd` | Read storage RRD statistics (returns PNG). | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | Hors périmètre |
 
 ### Stockage : rrddata
 
@@ -1331,7 +1338,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Accès
 
-45 points d'entrée : 28 faits, 14 à faire, 3 hors périmètre.
+45 points d'entrée : 28 faits, 13 à faire, 4 hors périmètre.
 
 ### Accès : (racine)
 
@@ -1436,7 +1443,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/access/vncticket` | verify VNC authentication ticket. | aucune (public) | À faire |
+| POST | `/access/vncticket` | verify VNC authentication ticket. | aucune (public) | Hors périmètre |
 
 ## Pools
 

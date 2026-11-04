@@ -1,6 +1,7 @@
 // Tableau générique : tri par colonne, filtre texte, sélection multiple, actions par ligne
 // et groupées, pagination au-delà de 100 lignes, états vide et chargement.
 // Garde le style de .table. À placer dans un <Panel pad={false}>.
+import { clickable } from "./ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 export interface Column<T> {
@@ -167,7 +168,7 @@ export function DataTable<T>({
                   <tr
                     key={k}
                     className={`${onRowClick ? "clickable" : ""} ${sel.has(k) ? "selected" : ""} ${rowClassName?.(r) ?? ""}`}
-                    onClick={onRowClick ? () => onRowClick(r) : undefined}
+                    {...(onRowClick ? clickable(() => onRowClick(r)) : {})}
                   >
                     {bulk && (
                       <td onClick={(e) => e.stopPropagation()}>

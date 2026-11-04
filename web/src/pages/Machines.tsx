@@ -167,7 +167,7 @@ export function Machines() {
           filter="Nom, ID, tag ou adresse IP"
           onRowClick={(g) => navigate(`/machines/${g.node}/${g.type}/${g.vmid}`)}
           actions={(g) => <GuestActions g={g} size="sm" onChange={res.refresh} />}
-          empty={<>Aucune machine. <Link to="/creer" style={{ color: "var(--orange)" }}>Créer la première</Link></>}
+          empty={<>Aucune machine. <Link to="/creer" style={{ color: "var(--orange-ink)" }}>Créer la première</Link></>}
           toolbar={
             <span className="row">
               <span className="btn-group">

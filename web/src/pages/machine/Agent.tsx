@@ -19,6 +19,9 @@ export function Agent({ ctx }: { ctx: GuestCtx }) {
   const freeze = usePoll(() => (ok ? pve.post<any>(`${a}/fsfreeze-status`) : Promise.resolve(null)), 0, [ok]);
   const tz = usePoll(() => (ok ? pve.get<any>(`${a}/get-timezone`) : Promise.resolve(null)), 0, [ok]);
   const vcpus = usePoll(() => (ok ? pve.get<any>(`${a}/get-vcpus`) : Promise.resolve(null)), 0, [ok]);
+  const host = usePoll(() => (ok ? pve.get<any>(`${a}/get-host-name`) : Promise.resolve(null)), 0, [ok]);
+  const time = usePoll(() => (ok ? pve.get<any>(`${a}/get-time`) : Promise.resolve(null)), 0, [ok]);
+  const info = usePoll(() => (ok ? pve.get<any>(`${a}/info`) : Promise.resolve(null)), 0, [ok]);
   const [pw, setPw] = useState(false);
   const canPower = usePermission(`/vms/${ctx.vmid}`, "VM.PowerMgmt").allowed;
   const canMonitor = usePermission(`/vms/${ctx.vmid}`, "VM.Monitor").allowed;
@@ -39,7 +42,10 @@ export function Agent({ ctx }: { ctx: GuestCtx }) {
             <div>Version</div><div>{o.version ?? "-"}</div>
             <div>Noyau</div><div className="mono small">{o["kernel-release"]}</div>
             <div>Architecture</div><div>{o.machine}</div>
+            <div>Nom d&apos;hôte</div><div className="mono">{host.data?.result?.["host-name"] ?? "-"}</div>
             <div>Fuseau horaire</div><div>{tz.data?.result?.zone ?? "-"}</div>
+            <div>Heure de la VM</div><div>{time.data?.result ? <>{new Date(time.data.result / 1e6).toLocaleString("fr-FR")}{Math.abs(time.data.result / 1e6 - Date.now()) > 60000 && <span className="badge warn" style={{ marginLeft: 6 }}>décalée</span>}</> : "-"}</div>
+            <div>Version de l&apos;agent</div><div>{info.data?.result?.version ?? "-"}</div>
             <div>vCPU en ligne</div><div>{vcpus.data?.result ? `${vcpus.data.result.filter((c: any) => c.online).length} / ${vcpus.data.result.length}` : "-"}</div>
           </div>
         ) : <Empty>Chargement…</Empty>}
@@ -47,6 +53,7 @@ export function Agent({ ctx }: { ctx: GuestCtx }) {
       <Panel title="Actions de l'agent">
         <div className="stack">
           <div className="row">
+            <Button onClick={async () => { try { await pve.post(`${a}/ping`); toast("L'agent répond.", "ok"); } catch (e) { toast(`${(e as Error).message}. Vérifie que qemu-guest-agent tourne dans la VM.`, "error"); } }}>Tester l&apos;agent</Button>
             <Button disabled={!canPower} onClick={() => setConfirm("shutdown")}>Arrêt propre par l&apos;agent</Button>
             {frozen
               ? <Button variant="primary" disabled={!canMonitor} onClick={async () => { try { await pve.post(`${a}/fsfreeze-thaw`); toast("Fichiers dégelés", "ok"); freeze.refresh(); } catch (e) { toast((e as Error).message, "error"); } }}>Dégeler les fichiers</Button>

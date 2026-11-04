@@ -199,6 +199,155 @@ function buildServer(key: McpKey) {
     return { message: `Sauvegarde de ${g.name} (${vmid}) lancée vers ${storage}.`, target: `${g.name} (${vmid})`, upid };
   });
 
+  // ── Datacenter, HA, SDN, Ceph, pare-feu, permissions, réplication, PBS ──
+
+  read("datacenter", "Datacenter", "Cluster (quorum, nœuds), options du datacenter, stockages déclarés et tâches de sauvegarde planifiées.", {}, async () => {
+    const [status, options, storages, jobs] = await Promise.all([
+      call("GET", "/cluster/status").catch(() => []), call("GET", "/cluster/options").catch(() => ({})),
+      call("GET", "/storage"), call("GET", "/cluster/backup").catch(() => []),
+    ]);
+    const cluster = status.find((s: any) => s.type === "cluster");
+    return {
+      cluster: cluster ? { nom: cluster.name, quorum: !!cluster.quorate, noeuds: cluster.nodes } : "nœud seul, sans cluster",
+      noeuds: status.filter((s: any) => s.type === "node").map((n: any) => ({ nom: n.name, en_ligne: !!n.online, ip: n.ip })),
+      options,
+      stockages: storages.map((s: any) => ({ nom: s.storage, type: s.type, contenu: s.content, partage: !!s.shared, desactive: !!s.disable, noeuds: s.nodes ?? "tous" })),
+      sauvegardes_planifiees: jobs.map((j: any) => ({ id: j.id, horaire: j.schedule, stockage: j.storage, machines: j.vmid ?? (j.all ? "toutes" : j.pool ? `pool ${j.pool}` : ""), active: j.enabled !== 0 })),
+    };
+  });
+
+  read("haute_disponibilite", "Haute disponibilité", "État du gestionnaire HA, ressources protégées (machines redémarrées ailleurs si un nœud tombe) et groupes HA.", {}, async () => {
+    const [status, resources, groups] = await Promise.all([
+      call("GET", "/cluster/ha/status/current"), call("GET", "/cluster/ha/resources"), call("GET", "/cluster/ha/groups").catch(() => []),
+    ]);
+    return {
+      etat: status.map((s: any) => ({ id: s.id, type: s.type, noeud: s.node, statut: s.status })),
+      ressources: resources.map((r: any) => ({ id: r.sid, etat_voulu: r.state, groupe: r.group, commentaire: r.comment })),
+      groupes: groups.map((g: any) => ({ nom: g.group, noeuds: g.nodes, restreint: !!g.restricted })),
+    };
+  });
+
+  read("reseau_logiciel", "Réseau logiciel (SDN)", "Zones, VNets et sous-réseaux du SDN, et changements en attente d'application.", {}, async () => {
+    const [zones, vnets] = await Promise.all([call("GET", "/cluster/sdn/zones"), call("GET", "/cluster/sdn/vnets")]);
+    const subnets = await Promise.all(vnets.map((v: any) => call("GET", `/cluster/sdn/vnets/${v.vnet}/subnets`).catch(() => [])));
+    return {
+      en_attente: [...zones, ...vnets].some((x: any) => x.state),
+      zones: zones.map((z: any) => ({ nom: z.zone, type: z.type, pont: z.bridge, noeuds: z.nodes ?? "tous" })),
+      vnets: vnets.map((v: any, i: number) => ({ nom: v.vnet, zone: v.zone, tag: v.tag, alias: v.alias, sous_reseaux: subnets[i].map((s: any) => ({ cidr: s.cidr, passerelle: s.gateway, snat: !!s.snat })) })),
+    };
+  });
+
+  read("ceph", "Ceph", "Santé du cluster Ceph : état, alertes, moniteurs, OSD, espace utilisé et pools.", {}, async () => {
+    const nodes = await call("GET", "/nodes");
+    for (const n of nodes.filter((x: any) => x.status === "online")) {
+      try {
+        const st = await call("GET", `/nodes/${n.node}/ceph/status`);
+        const pools = await call("GET", `/nodes/${n.node}/ceph/pool`).catch(() => []);
+        return {
+          lu_depuis: n.node, sante: st.health?.status,
+          alertes: Object.entries(st.health?.checks ?? {}).map(([k, v]: [string, any]) => `${k} : ${v.summary?.message ?? ""}`),
+          moniteurs: st.monmap?.mons?.map((m: any) => m.name),
+          osd: { total: st.osdmap?.num_osds, actifs: st.osdmap?.num_up_osds, dans_le_cluster: st.osdmap?.num_in_osds },
+          espace: st.pgmap ? `${bytes(st.pgmap.bytes_used)} / ${bytes(st.pgmap.bytes_total)}` : undefined,
+          pools: pools.map((p: any) => ({ nom: p.pool_name, copies: p.size, minimum: p.min_size, pg: p.pg_num, utilise: pct(p.percent_used ?? 0) })),
+        };
+      } catch { /* Ceph absent sur ce nœud, on essaie le suivant */ }
+    }
+    return { sante: "Ceph n'est installé sur aucun nœud en ligne." };
+  });
+
+  read("pare_feu", "Pare-feu", "Options, règles et groupes de sécurité du pare-feu du datacenter. Avec un vmid, règles de cette machine.", {
+    vmid: z.number().int().optional().describe("Identifiant d'une machine pour voir ses propres règles"),
+  }, async ({ vmid }) => {
+    const rule = (r: any) => ({ pos: r.pos, actif: !!r.enable, sens: r.type, action: r.action, macro: r.macro, source: r.source, destination: r.dest, proto: r.proto, port: r.dport, commentaire: r.comment });
+    if (vmid !== undefined) {
+      const g = await locate(call, vmid);
+      const [options, rules] = await Promise.all([call("GET", `/nodes/${g.node}/${g.type}/${vmid}/firewall/options`), call("GET", `/nodes/${g.node}/${g.type}/${vmid}/firewall/rules`)]);
+      return { machine: `${g.name} (${vmid})`, options, regles: rules.map(rule) };
+    }
+    const [options, rules, groups] = await Promise.all([call("GET", "/cluster/firewall/options"), call("GET", "/cluster/firewall/rules"), call("GET", "/cluster/firewall/groups")]);
+    return { options, regles: rules.map(rule), groupes_de_securite: groups.map((x: any) => ({ nom: x.group, commentaire: x.comment })) };
+  });
+
+  read("permissions", "Permissions", "Utilisateurs, groupes et permissions (qui a quel rôle sur quel chemin).", {}, async () => {
+    const [users, groups, acl] = await Promise.all([call("GET", "/access/users"), call("GET", "/access/groups"), call("GET", "/access/acl")]);
+    return {
+      utilisateurs: users.map((u: any) => ({ compte: u.userid, actif: u.enable !== 0, expire: u.expire ? new Date(u.expire * 1000).toISOString().slice(0, 10) : "jamais", groupes: u.groups, double_auth: !!u["tfa-locked-until"] || !!u.keys })),
+      groupes: groups.map((g: any) => ({ nom: g.groupid, membres: g.users, commentaire: g.comment })),
+      permissions: acl.map((a: any) => ({ chemin: a.path, qui: a.ugid, type: a.type, role: a.roleid, propage: !!a.propagate })),
+    };
+  });
+
+  read("replication", "Réplication", "Tâches de réplication entre nœuds, avec la date de la dernière synchronisation et les échecs.", {}, async () => {
+    const jobs = await call("GET", "/cluster/replication");
+    const nodes = await call("GET", "/nodes");
+    const states = (await Promise.all(nodes.filter((n: any) => n.status === "online").map((n: any) => call("GET", `/nodes/${n.node}/replication`).catch(() => [])))).flat();
+    return jobs.map((j: any) => {
+      const s = states.find((x: any) => x.id === j.id) ?? {};
+      return { id: j.id, machine: j.guest, vers: j.target, horaire: j.schedule, active: !j.disable, derniere_synchro: s.last_sync ? ago(s.last_sync) : "jamais", echecs: s.fail_count ?? 0, erreur: s.error };
+    });
+  });
+
+  read("proxmox_backup_server", "Proxmox Backup Server", "Stockages de type PBS : serveur, datastore, espace utilisé et nombre de sauvegardes.", {}, async () => {
+    const storages = (await call("GET", "/storage")).filter((s: any) => s.type === "pbs");
+    if (!storages.length) return { message: "Aucun stockage Proxmox Backup Server n'est déclaré." };
+    const nodes = await call("GET", "/nodes");
+    const node = nodes.find((n: any) => n.status === "online")?.node;
+    return Promise.all(storages.map(async (s: any) => {
+      const [st, content] = await Promise.all([
+        call("GET", `/nodes/${node}/storage/${s.storage}/status`).catch(() => null),
+        call("GET", `/nodes/${node}/storage/${s.storage}/content`, { content: "backup" }).catch(() => []),
+      ]);
+      return { nom: s.storage, serveur: s.server, datastore: s.datastore, actif: !!st?.active, utilise: st ? `${bytes(st.used)} / ${bytes(st.total)}` : "injoignable", sauvegardes: content.length };
+    }));
+  });
+
+  // ── Actions non destructrices ──
+
+  act("migrer_machine", "Migrer une machine", "Déplace une machine vers un autre nœud du cluster. Une VM allumée migre à chaud ; un conteneur allumé redémarre sur le nœud cible.", {
+    vmid: z.number().int(),
+    cible: z.string().describe("Nom du nœud de destination"),
+  }, false, async ({ vmid, cible }) => {
+    const g = await locate(call, vmid);
+    if (g.node === cible) throw new Error(`${g.name} (${vmid}) est déjà sur ${cible}.`);
+    const nodes = await call("GET", "/nodes");
+    if (!nodes.some((n: any) => n.node === cible && n.status === "online")) throw new Error(`Le nœud ${cible} n'existe pas ou n'est pas en ligne. Utilise datacenter pour voir les nœuds.`);
+    const running = g.status === "running";
+    const params = g.type === "qemu" ? { target: cible, online: running ? 1 : 0, "with-local-disks": 1 } : { target: cible, restart: running ? 1 : 0 };
+    const upid = await call("POST", `/nodes/${g.node}/${g.type}/${vmid}/migrate`, params);
+    return { message: `Migration de ${g.name} (${vmid}) de ${g.node} vers ${cible} lancée.`, target: `${g.name} (${vmid}) -> ${cible}`, upid };
+  });
+
+  act("cloner_modele", "Créer une machine depuis un modèle", "Crée une nouvelle machine à partir d'un modèle (template). Seuls les modèles peuvent être clonés par cet outil.", {
+    vmid: z.number().int().describe("Identifiant du modèle"),
+    nom: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]{0,62}$/).describe("Nom de la nouvelle machine (lettres, chiffres, points et tirets)"),
+    nouvel_id: z.number().int().min(100).optional().describe("Identifiant de la nouvelle machine (par défaut : le prochain libre)"),
+    complet: z.boolean().optional().describe("Copie complète des disques (par défaut : clone lié, plus rapide)"),
+  }, false, async ({ vmid, nom, nouvel_id, complet }) => {
+    const g = await locate(call, vmid);
+    const conf = await call("GET", `/nodes/${g.node}/${g.type}/${vmid}/config`);
+    if (!Number(conf.template)) throw new Error(`${g.name} (${vmid}) n'est pas un modèle. Seuls les modèles peuvent être clonés par Claude.`);
+    const newid = nouvel_id ?? Number(await call("GET", "/cluster/nextid"));
+    const params = { newid, full: complet ? 1 : 0, ...(g.type === "qemu" ? { name: nom } : { hostname: nom }) };
+    const upid = await call("POST", `/nodes/${g.node}/${g.type}/${vmid}/clone`, params);
+    return { message: `Création de ${nom} (${newid}) depuis le modèle ${g.name} lancée.`, target: `${g.name} (${vmid}) -> ${nom} (${newid})`, upid };
+  });
+
+  act("tag_machine", "Ajouter ou retirer un tag", "Ajoute ou retire un tag sur une machine. Les tags servent à classer et filtrer les machines.", {
+    vmid: z.number().int(),
+    action: z.enum(["ajouter", "retirer"]),
+    tag: z.string().regex(/^[a-z0-9_][a-z0-9_.+-]{0,62}$/i).describe("Le tag, par exemple web ou prod"),
+  }, false, async ({ vmid, action, tag }) => {
+    const g = await locate(call, vmid);
+    const base = `/nodes/${g.node}/${g.type}/${vmid}`;
+    const conf = await call("GET", `${base}/config`);
+    const tags = String(conf.tags ?? "").split(/[;,\s]+/).filter(Boolean);
+    const next = action === "ajouter" ? [...new Set([...tags, tag])] : tags.filter((t) => t !== tag);
+    if (next.length === tags.length && next.every((t, i) => t === tags[i])) return { message: `Rien à changer : ${g.name} ${action === "ajouter" ? "a déjà" : "n'a pas"} le tag « ${tag} ».`, target: `${g.name} (${vmid})` };
+    await call("PUT", `${base}/config`, next.length ? { tags: next.join(";") } : { delete: "tags" });
+    return { message: `Tag « ${tag} » ${action === "ajouter" ? "ajouté à" : "retiré de"} ${g.name} (${vmid}).`, target: `${g.name} (${vmid}) tag ${tag}` };
+  });
+
   return server;
 }
 

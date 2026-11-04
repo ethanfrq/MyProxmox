@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Empty, Notice, PageHead, Panel, Status, TypeTag } from "../components/ui";
+import { Empty, Notice, PageHead, Panel, Status, TypeTag, clickable } from "../components/ui";
 import { api, usePoll } from "../lib/api";
 import { useApp } from "../lib/app";
 import { ago, bytes, date } from "../../../shared/format";
@@ -29,7 +29,7 @@ export function Backups() {
               <div className="table-wrap"><table className="table">
                 <thead><tr><th>Machine</th><th>Statut</th><th>Dernière sauvegarde</th><th className="num">Nombre</th><th className="num">Taille</th><th>Planifiée</th><th>Snapshots</th></tr></thead>
                 <tbody>{[...d.rows].sort((x: any, y: any) => (x.lastBackup || 0) - (y.lastBackup || 0)).map((r: any) => (
-                  <tr key={r.vmid} className="clickable" onClick={() => navigate(`/machines/${r.node}/${r.type}/${r.vmid}`)}>
+                  <tr key={r.vmid} className="clickable" {...clickable(() => navigate(`/machines/${r.node}/${r.type}/${r.vmid}`))}>
                     <td className="name"><TypeTag type={r.type} /> <strong style={{ marginLeft: 6 }}>{r.name}</strong> <span className="muted mono small">{r.vmid}</span></td>
                     <td><Status status={r.status} /></td>
                     <td className={r.stale ? "health-bad" : ""}>{r.lastBackup ? <>{ago(r.lastBackup)} <span className="muted small">({date(r.lastBackup)})</span></> : "Jamais"}</td>

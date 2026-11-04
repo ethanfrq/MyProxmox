@@ -1,6 +1,6 @@
 # Historique
 
-## 2.0.0 (en cours)
+## 2.0.0 (2026-11-04)
 
 - Socle commun : tableau triable avec actions groupées, formulaires décrits par schéma, assistants à étapes, journal des tâches en direct (« Voir le journal » dans les notifications), arbre des ressources à gauche (vues serveurs, pools, tags) avec menu contextuel
 - Les boutons d'action suivent les droits Proxmox de la personne connectée (`GET /access/permissions`)
@@ -13,7 +13,13 @@
 - Stockage et contenu : envoi de fichiers depuis le navigateur (relayé en flux vers Proxmox, barre de progression, somme de contrôle), téléchargement depuis une adresse avec vérification, disques orphelins, rétention simulée avant application, suppression groupée de sauvegardes, résumé PBS (espace, déduplication, vérifications), graphe d'occupation sur 1 jour à 1 an
 - Assistants de création complets (VM et conteneur), création depuis un modèle, mode simple conservé
 - Actions groupées : redémarrage, sauvegarde, migration, ajout et retrait de tags
-- Tests de bout en bout Playwright en mode démo
+- Serveur MCP : 24 outils. Nouveaux outils en lecture (datacenter, haute disponibilité, SDN, Ceph, pare-feu, permissions, réplication, Proxmox Backup Server) et en action (migrer, créer depuis un modèle, ajouter ou retirer un tag), toujours sans action destructrice
+- Agent invité : nom d'hôte, heure de la VM (avec alerte si elle dérive), version, test de l'agent
+- Journal d'une tâche : bouton pour arrêter une tâche en cours
+- Pages chargées à la demande (`React.lazy`) : le premier écran pèse environ 80 Ko gzip au lieu de 160
+- Accessibilité : navigation au clavier, focus visible partout, libellés sur les boutons à icône
+- Tests de bout en bout Playwright en mode démo, une passe par page, lancés par la CI GitHub avec un contrôle de la taille du JS initial
+- Inventaire de parité avec l'API Proxmox (`docs/PARITE.md`) et rubrique « Pas encore couvert » dans le README
 
 ## 1.0.0
 

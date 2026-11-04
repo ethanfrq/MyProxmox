@@ -1,6 +1,6 @@
 {
   "name": "myproxmox",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Interface web simple pour Proxmox VE, avec écran de monitoring, alertes et serveur MCP pour Claude.",
   "license": "MIT",
   "private": true,

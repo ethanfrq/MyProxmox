@@ -371,6 +371,10 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
     const t = s.tasks.find((x) => x.upid === rest[1]);
     if (rest[2] === "log") return (t?.log ?? ["(journal vide)"]).map((tx, i) => ({ n: i + 1, t: tx }));
     if (rest[2] === "status") return { status: "stopped", exitstatus: t?.status ?? "OK", type: t?.type, id: t?.id };
+    if (method === "DELETE" && !rest[2]) {
+      if (t && t.status === "OK") fail(500, "task already finished");
+      return null;
+    }
   }
   if (r === "GET /tasks") {
     return s.tasks

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactElement } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { I } from "./icons";
 import { Button, useToast } from "./ui";
@@ -54,6 +54,7 @@ export function Shell() {
 
   return (
     <>
+      <a href="#contenu" className="skip-link">Aller au contenu</a>
       {DEMO && <div className="demo-banner">Démo avec de fausses données : rien n'est envoyé nulle part. <a href={REPO_URL} target="_blank" rel="noreferrer">Installer MyProxmox chez toi</a></div>}
       <header className="topbar">
         <Link to="/" className="brand"><span className="brand-mark">P</span>MyProxmox</Link>
@@ -65,10 +66,10 @@ export function Shell() {
           </Link>
         )}
         {mods?.monitoring !== false && (
-          <Link to="/monitoring" className="icon-btn" title="Écran de monitoring"><I.monitor /></Link>
+          <Link to="/monitoring" className="icon-btn" title="Écran de monitoring" aria-label="Écran de monitoring"><I.monitor /></Link>
         )}
         <div ref={ref} style={{ position: "relative" }}>
-          <button className="icon-btn" title="Notifications" onClick={() => setOpen((o) => !o)}>
+          <button className="icon-btn" title="Notifications" aria-label="Notifications" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             <I.bell />
             {unread > 0 && <span className={`dot-count ${notifications.some((n) => !n.read && n.level === "critical") ? "crit" : ""}`}>{unread > 99 ? "99+" : unread}</span>}
           </button>
@@ -97,7 +98,7 @@ export function Shell() {
         {me.kind === "local"
           ? <Link to="/compte" className="user-chip" title="Mon compte">{me.displayName ?? me.username}<span className="tag">lecture seule</span></Link>
           : <span className="user-chip">{me.username}{me.admin && <span className="tag">admin</span>}</span>}
-        <button className="icon-btn" title="Déconnexion" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); resetPermissions(); navigate("/login"); }}><I.logout /></button>
+        <button className="icon-btn" title="Déconnexion" aria-label="Déconnexion" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); resetPermissions(); navigate("/login"); }}><I.logout /></button>
       </header>
       <div className="layout">
         <nav className="side" aria-label="Navigation">
@@ -110,7 +111,7 @@ export function Shell() {
                 {items.map((it) => (
                   <NavLink key={it.to} to={it.to} end={it.end} className={({ isActive }) => (isActive ? "active" : "")}>
                     <it.icon />{it.label}
-                    {it.to === "/alertes" && alerts.length > 0 && <span className="tag" style={{ marginLeft: "auto", background: crit ? "var(--red-soft)" : "var(--orange-soft)", color: crit ? "var(--red)" : "var(--orange-hover)" }}>{alerts.length}</span>}
+                    {it.to === "/alertes" && alerts.length > 0 && <span className="tag" style={{ marginLeft: "auto", background: crit ? "var(--red-soft)" : "var(--orange-soft)", color: crit ? "var(--red)" : "var(--orange-ink)" }}>{alerts.length}</span>}
                   </NavLink>
                 ))}
               </div>
@@ -119,7 +120,7 @@ export function Shell() {
           {settings && <div className="side-group" style={{ marginTop: 20, textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>v{settings.version}</div>}
         </nav>
         <TreePanel />
-        <main className="main"><Outlet /></main>
+        <main className="main" id="contenu" tabIndex={-1}><Suspense fallback={<div className="empty">Chargement…</div>}><Outlet /></Suspense></main>
       </div>
     </>
   );

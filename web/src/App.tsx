@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./lib/api";
 import { AppProvider, browserNotify } from "./lib/app";
@@ -7,25 +7,27 @@ import { Shell, useLiveToasts } from "./components/Shell";
 import { ToastProvider } from "./components/ui";
 import type { Me } from "../../shared/types";
 import { Login } from "./pages/Login";
-import { Setup } from "./pages/Setup";
-import { Overview } from "./pages/Overview";
-import { Machines } from "./pages/Machines";
-import { MachineDetail } from "./pages/MachineDetail";
-import { Create } from "./pages/Create";
-import { Server } from "./pages/Server";
-import { Storage } from "./pages/Storage";
-import { Network } from "./pages/Network";
-import { Backups } from "./pages/Backups";
-import { Tasks } from "./pages/Tasks";
-import { Alerts } from "./pages/Alerts";
-import { Security } from "./pages/Security";
-import { ClaudeMcp } from "./pages/ClaudeMcp";
-import { Settings } from "./pages/Settings";
-import { Monitoring } from "./pages/Monitoring";
-import { Register } from "./pages/Register";
-import { Account } from "./pages/Account";
-import { LocalAccounts } from "./pages/LocalAccounts";
-import { Datacenter } from "./pages/Datacenter";
+
+// Chaque page est chargée à la demande : le premier écran reste léger.
+const Setup = lazy(() => import("./pages/Setup").then((m) => ({ default: m.Setup })));
+const Overview = lazy(() => import("./pages/Overview").then((m) => ({ default: m.Overview })));
+const Machines = lazy(() => import("./pages/Machines").then((m) => ({ default: m.Machines })));
+const MachineDetail = lazy(() => import("./pages/MachineDetail").then((m) => ({ default: m.MachineDetail })));
+const Create = lazy(() => import("./pages/Create").then((m) => ({ default: m.Create })));
+const Server = lazy(() => import("./pages/Server").then((m) => ({ default: m.Server })));
+const Storage = lazy(() => import("./pages/Storage").then((m) => ({ default: m.Storage })));
+const Network = lazy(() => import("./pages/Network").then((m) => ({ default: m.Network })));
+const Backups = lazy(() => import("./pages/Backups").then((m) => ({ default: m.Backups })));
+const Tasks = lazy(() => import("./pages/Tasks").then((m) => ({ default: m.Tasks })));
+const Alerts = lazy(() => import("./pages/Alerts").then((m) => ({ default: m.Alerts })));
+const Security = lazy(() => import("./pages/Security").then((m) => ({ default: m.Security })));
+const ClaudeMcp = lazy(() => import("./pages/ClaudeMcp").then((m) => ({ default: m.ClaudeMcp })));
+const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.Settings })));
+const Monitoring = lazy(() => import("./pages/Monitoring").then((m) => ({ default: m.Monitoring })));
+const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
+const Account = lazy(() => import("./pages/Account").then((m) => ({ default: m.Account })));
+const LocalAccounts = lazy(() => import("./pages/LocalAccounts").then((m) => ({ default: m.LocalAccounts })));
+const Datacenter = lazy(() => import("./pages/Datacenter").then((m) => ({ default: m.Datacenter })));
 
 function Protected() {
   const [me, setMe] = useState<Me | null>(null);
@@ -85,6 +87,7 @@ export function App() {
   return (
     <BrowserRouter basename={BASENAME}>
       <Wrap>
+        <Suspense fallback={<div className="empty" style={{ paddingTop: 120 }}>Chargement…</div>}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<Setup />} />
@@ -93,6 +96,7 @@ export function App() {
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/*" element={<Protected />} />
         </Routes>
+        </Suspense>
       </Wrap>
     </BrowserRouter>
   );

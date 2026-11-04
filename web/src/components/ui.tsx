@@ -1,5 +1,5 @@
 // Petits composants réutilisables : boutons, panneaux, jauges, onglets, fenêtres.
-import { cloneElement, createContext, isValidElement, useCallback, useContext, useId, useState, type ReactElement, type ReactNode, type ButtonHTMLAttributes } from "react";
+import { cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useId, useRef, useState, type ReactElement, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { pve } from "../lib/api";
 import { STATUS_LABEL, TASK_LABEL } from "../../../shared/format";
 import { TaskLogModal } from "./TaskLog";
@@ -15,7 +15,7 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function Button({ variant = "default", size, icon, busy, block, children, className = "", disabled, ...rest }: BtnProps) {
   const cls = ["btn", variant !== "default" && `btn-${variant}`, size && `btn-${size}`, block && "btn-block", className].filter(Boolean).join(" ");
   return (
-    <button className={cls} disabled={disabled || busy} {...rest}>
+    <button className={cls} disabled={disabled || busy} aria-label={rest["aria-label"] ?? (!children && typeof rest.title === "string" ? rest.title : undefined)} aria-busy={busy || undefined} {...rest}>
       {busy ? <span className="spin" /> : icon}
       {children}
     </button>
@@ -103,6 +103,17 @@ export function Field({ label, help, children, full }: { label: string; help?: R
   );
 }
 
+/** Rend une ligne ou une carte cliquable aussi au clavier (Tab puis Entrée ou Espace). */
+export function clickable(fn: () => void) {
+  return {
+    onClick: fn,
+    tabIndex: 0,
+    onKeyDown: (e: { key: string; target: EventTarget; currentTarget: EventTarget; preventDefault: () => void }) => {
+      if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fn(); }
+    },
+  };
+}
+
 export function Notice({ kind = "info", children }: { kind?: "info" | "error" | "ok" | "warn"; children: ReactNode }) {
   return <div className={`notice ${kind === "info" ? "" : kind}`}>{children}</div>;
 }
@@ -112,10 +123,41 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 // ── Fenêtre simple (formulaires, détails) ───────────────────────────
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Clavier dans une fenêtre : focus à l'ouverture, Tab reste dedans, Échap ferme, focus rendu à la fermeture. */
+function useDialog(onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    const box = ref.current;
+    if (box && !box.contains(document.activeElement)) (box.querySelector<HTMLElement>(`.modal-body ${FOCUSABLE}`) ?? box.querySelector<HTMLElement>(FOCUSABLE) ?? box).focus();
+    const key = (e: KeyboardEvent) => {
+      if (!box) return;
+      // Seule la fenêtre du dessus réagit
+      const all = document.querySelectorAll(".modal");
+      if (all[all.length - 1] !== box) return;
+      if (e.key === "Escape") { e.stopPropagation(); close.current(); return; }
+      if (e.key !== "Tab") return;
+      const items = [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("keydown", key); if (before && document.contains(before)) before.focus(); };
+  }, []);
+  return ref;
+}
+
 export function Modal({ title, children, onClose, wide, foot }: { title: ReactNode; children: ReactNode; onClose: () => void; wide?: boolean; foot?: ReactNode }) {
+  const ref = useDialog(onClose);
   return (
-    <div className="modal-bg" onClick={onClose} onKeyDown={(e) => e.key === "Escape" && onClose()}>
-      <div className={`modal ${wide ? "modal-wide" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={typeof title === "string" ? title : undefined}>
+    <div className="modal-bg" onClick={onClose}>
+      <div ref={ref} tabIndex={-1} className={`modal ${wide ? "modal-wide" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={typeof title === "string" ? title : undefined}>
         <div className="modal-head"><h2>{title}</h2></div>
         <div className="modal-body">{children}</div>
         {foot && <div className="modal-foot">{foot}</div>}
@@ -134,9 +176,10 @@ export function Confirm({
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const blocked = requireText !== undefined && typed !== requireText;
+  const ref = useDialog(onClose);
   return (
     <div className="modal-bg" onClick={onClose}>
-      <div className={`modal ${danger ? "danger" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+      <div ref={ref} tabIndex={-1} className={`modal ${danger ? "danger" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={title}>
         <div className="modal-head"><h2>{title}</h2></div>
         <div className="modal-body stack">
           {children}

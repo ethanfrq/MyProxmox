@@ -36,6 +36,13 @@ const HORS_PERIMETRE = {
   "GET /access/ticket": "page factice pour les formateurs de l'API",
   "GET /cluster/config/apiversion": "version du protocole de jonction, lue par pvecm",
   "POST /nodes/{node}/execute": "exécution groupée d'appels, réservée aux outils",
+  "GET /nodes/{node}/rrd": "image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata",
+  "GET /nodes/{node}/qemu/{vmid}/rrd": "image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata",
+  "GET /nodes/{node}/lxc/{vmid}/rrd": "image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata",
+  "GET /nodes/{node}/storage/{storage}/rrd": "image PNG générée côté serveur ; MyProxmox trace ses graphes depuis rrddata",
+  "POST /access/vncticket": "ticket interne d'un ancien client VNC Java ; la console passe par vncproxy",
+  "POST /nodes/{node}/qemu/{vmid}/config": "variante asynchrone de PUT config, qui fait la même chose",
+  "POST /nodes/{node}/qemu/{vmid}/dbus-vmstate": "utilisé par Proxmox pendant les migrations",
 };
 
 // ── Valeurs connues des variables utilisées dans les chemins du code ──
@@ -47,7 +54,7 @@ const ALIAS_VALUES = {
   kind: ["qemu", "lxc", "start", "shutdown", "reboot", "stop", "pci", "usb", "dir", "nfs", "cifs", "iscsi", "pbs", "lvm", "lvmthin", "zfs", "glusterfs"],
   "v.kind": ["sendmail", "smtp", "gotify", "webhook"],
   "t.type": ["sendmail", "smtp", "gotify", "webhook"],
-  action: ["start", "shutdown", "reboot", "stop"],
+  action: ["start", "shutdown", "reboot", "stop", "suspend", "resume", "reset"],
   "r.type": ["qemu", "lxc"],
   "ctx.type": ["qemu", "lxc"],
   "act.action": ["start", "stop", "restart", "reload"],

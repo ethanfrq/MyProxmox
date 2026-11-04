@@ -30,6 +30,7 @@ export function TaskLog({ node, upid, onDone, height = 360 }: { node?: string; u
   const [lines, setLines] = useState<string[]>([]);
   const [st, setSt] = useState<TaskStatus | null>(null);
   const [error, setError] = useState("");
+  const [stopping, setStopping] = useState<"ask" | "busy" | null>(null);
   const box = useRef<HTMLPreElement>(null);
   const done = useRef(onDone);
   done.current = onDone;
@@ -79,6 +80,19 @@ export function TaskLog({ node, upid, onDone, height = 360 }: { node?: string; u
           {!st ? "Chargement" : st.status === "running" ? "En cours" : ok ? "Terminée" : "Échec"}
         </span>
         <span className="small muted">{u.user} · démarrée le {date(u.start)} · nœud {n}</span>
+        {st?.status === "running" && (
+          // api: DELETE /nodes/{node}/tasks/{upid}
+          <span style={{ marginLeft: "auto" }} className="row">
+            {stopping === "ask" && <span className="small">Arrêter la tâche en cours ?</span>}
+            <button className={`btn btn-sm${stopping === "ask" ? " btn-danger" : ""}`} disabled={stopping === "busy"} onClick={async () => {
+              if (stopping !== "ask") return setStopping("ask");
+              setStopping("busy");
+              try { await pve.del(`/nodes/${n}/tasks/${encodeURIComponent(upid)}`); } catch (e) { setError((e as Error).message); }
+              setStopping(null);
+            }}>{stopping === "ask" ? "Oui, arrêter" : "Arrêter la tâche"}</button>
+            {stopping === "ask" && <button className="btn btn-sm" onClick={() => setStopping(null)}>Non</button>}
+          </span>
+        )}
       </div>
       {failed && <div className="notice error">La tâche a échoué : {st?.exitstatus}. Lis la fin du journal pour voir pourquoi.</div>}
       {error && <div className="notice error">Journal illisible : {error}. Vérifie que tu as le droit Sys.Audit sur le nœud.</div>}

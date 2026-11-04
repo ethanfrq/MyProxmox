@@ -61,3 +61,19 @@ test("captures du stockage", async ({ page }) => {
   await shot(page, "/stockage?node=pve&storage=backup-nas&onglet=resume", "stockage");
   await shot(page, "/stockage?node=pve&storage=local-lvm&onglet=orphelins", "stockage-orphelins");
 });
+
+test("captures des pages générales, de Claude et du monitoring", async ({ page }) => {
+  await loginProxmox(page);
+  await shot(page, "/", "overview");
+  await shot(page, "/claude", "claude");
+  await shot(page, "/securite", "securite");
+  await shot(page, "/reseau", "reseau");
+  await shot(page, "/alertes", "alertes");
+  await shot(page, "/sauvegardes", "sauvegardes");
+  for (const [vue, file] of [["general", "monitoring"], ["machines", "monitoring-machines"], ["reseau", "monitoring-reseau"], ["stockage", "monitoring-stockage"], ["securite", "monitoring-securite"], ["historique", "monitoring-historique"]]) {
+    await page.goto(`/monitoring?vue=${vue}&rotation=0`);
+    await expect(page.locator(".mon")).toBeVisible();
+    await page.waitForTimeout(1800);
+    await page.screenshot({ path: `docs/images/${file}.png` });
+  }
+});

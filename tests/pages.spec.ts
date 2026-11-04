@@ -18,6 +18,7 @@ const PAGES: [string, string][] = [
   ["/securite", "Sécurité"],
   ["/claude", "Claude"],
   ["/parametres", "Paramètres"],
+  ["/parametres/comptes", "Comptes MyProxmox"],
 ];
 
 for (const [path, title] of PAGES) {

@@ -94,7 +94,10 @@ Quelques exemples :
 - « Est-ce qu'un de mes disques montre des signes de faiblesse ? »
 - « Il reste combien de place sur mes stockages, et pour combien de temps ? »
 - « Y a-t-il eu des tentatives de connexion suspectes ? »
+- « Le cluster Ceph est-il en bonne santé ? »
+- « Qui a le droit d'administrer les machines ? »
 - Avec une clé « actions » : « Prends un snapshot de home-assistant avant que je le mette à jour. »
+- Avec une clé « actions » : « Crée une machine web-02 depuis le modèle debian-12. »
 
 Claude te demande confirmation avant d'éteindre ou de redémarrer une machine.
 
@@ -112,11 +115,22 @@ Claude te demande confirmation avant d'éteindre ou de redémarrer une machine.
 | `securite` | lecture | 2FA, jetons API, pare-feu, échecs de connexion |
 | `reseau` | lecture | Interfaces, ponts, DNS, IP des machines |
 | `taches_recentes` | lecture | Dernières tâches Proxmox et leur résultat |
+| `datacenter` | lecture | Cluster et quorum, options du datacenter, stockages déclarés, sauvegardes planifiées |
+| `haute_disponibilite` | lecture | État du gestionnaire HA, ressources protégées, groupes |
+| `reseau_logiciel` | lecture | Zones, VNets et sous-réseaux du SDN, changements en attente |
+| `ceph` | lecture | Santé du cluster Ceph, alertes, OSD, moniteurs, pools |
+| `pare_feu` | lecture | Options, règles et groupes de sécurité, du datacenter ou d'une machine |
+| `permissions` | lecture | Utilisateurs, groupes, et qui a quel rôle sur quel chemin |
+| `replication` | lecture | Tâches de réplication, dernière synchronisation, échecs |
+| `proxmox_backup_server` | lecture | Stockages PBS : serveur, datastore, espace, nombre de sauvegardes |
 | `alimentation_machine` | actions | Démarrer, éteindre proprement, redémarrer |
 | `snapshot_machine` | actions | Prendre un snapshot |
 | `sauvegarder_machine` | actions | Lancer une sauvegarde immédiate |
+| `migrer_machine` | actions | Déplacer une machine vers un autre nœud (à chaud pour une VM allumée) |
+| `cloner_modele` | actions | Créer une machine depuis un modèle (refusé si la source n'est pas un modèle) |
+| `tag_machine` | actions | Ajouter ou retirer un tag sur une machine |
 
-Jamais possible par MCP, quel que soit le niveau : supprimer une machine ou un fichier, forcer un arrêt, restaurer une sauvegarde, modifier une configuration, changer les réglages de MyProxmox.
+Jamais possible par MCP, quel que soit le niveau : supprimer une machine ou un fichier, forcer un arrêt, restaurer une sauvegarde, modifier une configuration (à part les tags), toucher aux permissions ou au réseau, changer les réglages de MyProxmox.
 
 ## Le journal
 

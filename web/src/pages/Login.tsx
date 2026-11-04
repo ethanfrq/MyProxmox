@@ -114,7 +114,7 @@ export function Login() {
             {needOtp && <Button type="button" variant="ghost" onClick={() => { setNeedOtp(false); setOtp(""); }}>Retour</Button>}
             {kind === "local" && registration !== "off" && !needOtp && (
               <div className="small" style={{ textAlign: "center" }}>
-                Pas encore de compte ? <Link to="/inscription" style={{ color: "var(--orange)", fontWeight: 600 }}>Créer un compte</Link>
+                Pas encore de compte ? <Link to="/inscription" style={{ color: "var(--orange-ink)", fontWeight: 600 }}>Créer un compte</Link>
                 {registration === "approval" && <div className="muted">Un administrateur devra le valider.</div>}
               </div>
             )}

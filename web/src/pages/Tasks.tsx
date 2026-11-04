@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Empty, PageHead, Panel } from "../components/ui";
+import { Button, Empty, PageHead, Panel, clickable } from "../components/ui";
 import { I } from "../components/icons";
 import { pve, usePoll } from "../lib/api";
 import { date, TASK_LABEL } from "../../../shared/format";
@@ -21,10 +21,10 @@ export function Tasks() {
                 <thead><tr><th>Début</th><th>Tâche</th><th>Cible</th><th>Par</th><th>Résultat</th></tr></thead>
                 <tbody>
                   {list.map((t) => (
-                    <tr key={t.upid} className="clickable" onClick={() => setSel(t)} style={sel?.upid === t.upid ? { background: "var(--orange-soft)" } : undefined}>
+                    <tr key={t.upid} className="clickable" {...clickable(() => setSel(t))} style={sel?.upid === t.upid ? { background: "var(--orange-soft)" } : undefined}>
                       <td className="small muted">{date(t.starttime)}</td>
                       <td>{TASK_LABEL[t.type] ?? t.type}</td>
-                      <td className="mono small">{t.id || "—"}</td>
+                      <td className="mono small">{t.id || "-"}</td>
                       <td className="small muted">{t.user}</td>
                       <td>{t.status ? <span className={`badge ${t.status === "OK" ? "on" : "err"}`}>{t.status === "OK" ? "OK" : t.status}</span> : <span className="badge warn">En cours</span>}</td>
                     </tr>

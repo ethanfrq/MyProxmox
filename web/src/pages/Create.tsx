@@ -138,7 +138,7 @@ function CreateLxc({ node }: { node: string }) {
               <select className="select input" value={f.template} onChange={set("template")}>
                 {templates.map((t) => <option key={t.volid} value={t.volid}>{t.volid.split("/").pop()}</option>)}
               </select>
-            ) : <Notice kind="warn">Aucun modèle téléchargé. <Link to="/stockage" style={{ color: "var(--orange)", fontWeight: 600 }}>Télécharge-en un dans Stockage</Link>, puis reviens.</Notice>}
+            ) : <Notice kind="warn">Aucun modèle téléchargé. <Link to="/stockage" style={{ color: "var(--orange-ink)", fontWeight: 600 }}>Télécharge-en un dans Stockage</Link>, puis reviens.</Notice>}
           </Field>
           <Field label="Mot de passe root"><input className="input" type="password" value={f.password} onChange={set("password")} /></Field>
           <Field label="Confirmer"><input className="input" type="password" value={f.password2} onChange={set("password2")} /></Field>
@@ -210,7 +210,7 @@ function CreateVm({ node }: { node: string }) {
         <div className="form-grid">
           <Field label="ID"><input className="input mono" value={f.vmid} onChange={set("vmid")} /></Field>
           <Field label="Nom"><input className="input" value={f.name} onChange={(e) => setF((x) => ({ ...x, name: e.target.value.replace(/[^a-zA-Z0-9.-]/g, "") }))} /></Field>
-          <Field label="Image d'installation (ISO)" full help={isos.length ? "Le disque d'installation, comme une clé USB." : <>Aucune ISO. <Link to="/stockage" style={{ color: "var(--orange)" }}>Ajoute-en une dans Stockage</Link>.</>}>
+          <Field label="Image d'installation (ISO)" full help={isos.length ? "Le disque d'installation, comme une clé USB." : <>Aucune ISO. <Link to="/stockage" style={{ color: "var(--orange-ink)" }}>Ajoute-en une dans Stockage</Link>.</>}>
             <select className="select input" value={f.iso} onChange={set("iso")}>
               <option value="">Aucune (installer plus tard)</option>
               {isos.map((i) => <option key={i.volid} value={i.volid}>{i.volid.split("/").pop()}</option>)}
@@ -274,7 +274,7 @@ function FromTemplate() {
         <button key={t.id} type="button" className="panel tpl-card" onClick={() => setPick(t)}>
           <div className="row" style={{ justifyContent: "space-between" }}><strong>{t.name}</strong><span className="tag">{t.type === "qemu" ? "VM" : "CT"} {t.vmid}</span></div>
           <div className="small muted" style={{ marginTop: 6 }}>{t.maxcpu} cœur(s) · {bytes(t.maxmem)} · disque {bytes(t.maxdisk)} · {t.node}</div>
-          <div className="small" style={{ marginTop: 10, color: "var(--orange)", fontWeight: 600 }}>Créer depuis ce modèle</div>
+          <div className="small" style={{ marginTop: 10, color: "var(--orange-ink)", fontWeight: 600 }}>Créer depuis ce modèle</div>
         </button>
       ))}
       {pick && (

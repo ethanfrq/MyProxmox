@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Empty, Lvl, Meter, MiniMeter, Notice, PageHead, Panel, Status, TypeTag } from "../components/ui";
+import { Empty, Lvl, Meter, MiniMeter, Notice, PageHead, Panel, Status, TypeTag, clickable } from "../components/ui";
 import { Sparkline } from "../components/Sparkline";
 import { api, pve, usePoll } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -74,7 +74,7 @@ export function Overview() {
           <Panel title="Plus gros consommateurs" pad={false}>
             <table className="table"><tbody>
               {d.top.cpu.length ? d.top.cpu.map((g: any) => (
-                <tr key={g.id} className="clickable" onClick={() => navigate(`/machines/${g.node}/${g.type}/${g.vmid}`)}>
+                <tr key={g.id} className="clickable" {...clickable(() => navigate(`/machines/${g.node}/${g.type}/${g.vmid}`))}>
                   <td className="name"><TypeTag type={g.type} /> <strong style={{ marginLeft: 6 }}>{g.name}</strong></td>
                   <td className="num small"><MiniMeter ratio={g.cpu} />{pct(g.cpu)}</td>
                   <td className="num small muted">{bytes(g.mem)}</td>
