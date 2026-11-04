@@ -7,6 +7,7 @@ import { ipFilter } from "./ipfilter";
 import { api } from "./routes";
 import { handleMcp } from "./mcp";
 import { startEngine } from "./engine";
+import { attachConsole } from "./console";
 
 const HOST = process.env.HOST ?? "0.0.0.0";
 const PORT = Number(process.env.PORT ?? 8080);
@@ -58,7 +59,7 @@ if (existsSync(WEB)) {
   app.get("/", (_req, res) => res.type("text/plain").send("L'interface n'est pas compilée : lance « npm run build »."));
 }
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   const cfg = getConfig();
   console.log("");
   console.log(`  MyProxmox ${version()}${DEMO ? "  [MODE DÉMO]" : ""}`);
@@ -69,3 +70,5 @@ app.listen(PORT, HOST, () => {
   console.log("");
   startEngine();
 });
+// Consoles (noVNC et xterm.js) : relais WebSocket authentifié
+attachConsole(server);

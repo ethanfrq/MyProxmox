@@ -197,3 +197,43 @@ test("permissions sur la machine", async ({ page }) => {
   await expect(row).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test("console intégrée : terminal du conteneur via le relais WebSocket", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "/machines/pve/lxc/100", "console");
+  await expect(page.getByText("Connecté")).toBeVisible();
+  await expect(page.locator(".xterm-rows")).toContainText("Bienvenue");
+  await page.locator(".console-term").click();
+  await page.keyboard.type("uptime");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".xterm-rows")).toContainText("load average");
+  await open(page, "/machines/pve/qemu/101", "console");
+  await expect(page.locator(".console")).toContainText("La démo n'a pas d'écran");
+  expect(errors).toEqual([]);
+});
+
+test("agent invité : informations, gel et dégel", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "/machines/pve/qemu/101", "agent");
+  await expect(page.locator("main")).toContainText("Debian GNU/Linux 12");
+  await expect(page.locator("main")).toContainText("/boot/efi");
+  await page.getByRole("button", { name: "Geler les fichiers" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Geler" }).click();
+  await expect(page.getByText("gelés (écritures bloquées)")).toBeVisible();
+  await page.getByRole("button", { name: "Dégeler les fichiers" }).click();
+  await expect(page.getByText("normal", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("pause et reprise d'une VM", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "/machines/pve/qemu/107", "resume");
+  await page.getByRole("button", { name: "Pause" }).click();
+  await expect(page.getByRole("button", { name: "Reprendre" })).toBeVisible();
+  await page.getByRole("button", { name: "Reprendre" }).click();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  expect(errors).toEqual([]);
+});

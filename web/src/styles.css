@@ -618,3 +618,8 @@ a.user-chip:hover { color: var(--panel); }
 .fw-table tr.dragging td { opacity: .4; }
 .fw-table tr.drop-target td { box-shadow: inset 0 2px 0 var(--orange); }
 .fw-table .grip { color: var(--muted); }
+.console { display: flex; flex-direction: column; border: 1px solid var(--line); background: var(--panel); }
+.console-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+.console-term { height: 520px; background: var(--code-bg); padding: 6px; }
+.console-vnc { height: 620px; background: var(--code-bg); }
+.console-vnc:fullscreen { height: 100vh; }

@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: resolve(__dirname, demo ? "dist-demo" : "dist"),
       emptyOutDir: true,
+      target: "es2022", // noVNC utilise un await de premier niveau
       rollupOptions: {
         input: (demo
           ? { app: resolve(__dirname, "index.html"), site: resolve(__dirname, "site/index.html") }
@@ -23,7 +24,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
-      proxy: { "/api": "http://localhost:8080", "/mcp": "http://localhost:8080" },
+      proxy: { "/api": { target: "http://localhost:8080", ws: true }, "/mcp": "http://localhost:8080" },
       fs: { allow: [resolve(__dirname, "..")] },
     },
   };

@@ -55,6 +55,7 @@ const ALIAS_VALUES = {
 const PREFIXES = {
   fw: ["/nodes/${node}/${type}/${vmid}/firewall", "/nodes/${node}/firewall", "/cluster/firewall"],
   groupsFw: "/cluster/firewall",
+  a: "/nodes/${node}/qemu/${vmid}/agent",
   base: "/nodes/${node}/${type}/${vmid}",
   "ctx.base": "/nodes/${node}/${type}/${vmid}",
   b: "/nodes/${node}",
@@ -240,7 +241,7 @@ function findCalls() {
   const calls = [];
   const patterns = [
     // pve.get("/x"), pve.post<T>(`...`), pve.del(base, ...)
-    [/pve\.(get|post|put|del)(?:<[^>()]*>)?\(\s*(`[^`]*`|"[^"]*"|base\b)/g, (m) => [METHOD_OF[m[1]], m[2]]],
+    [/pve\.(get|post|put|del)(?:<(?:[^<>()]|<[^<>()]*>)*>)?\(\s*(`[^`]*`|"[^"]*"|base\b)/g, (m) => [METHOD_OF[m[1]], m[2]]],
     // call("GET", "/x")
     [/\bcall\(\s*"(GET|POST|PUT|DELETE)",\s*(`[^`]*`|"[^"]*")/g, (m) => [m[1], m[2]]],
     // Chemin construit à la main (relais WebSocket...) : commentaire « // api: GET /nodes/{node}/... »

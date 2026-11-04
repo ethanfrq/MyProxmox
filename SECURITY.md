@@ -15,6 +15,7 @@ Si tu trouves une faille, ne l'ouvre pas en issue publique. Utilise l'onglet **S
 | Inscription | Fermée par défaut. Un administrateur peut l'ouvrir avec validation (notification à chaque demande) ou sans (rôle monitoring uniquement). |
 | Compte de service | `myproxmox@pve` avec le rôle `MyProxmoxService` : lecture, démarrage et arrêt, snapshots, sauvegardes. Pas de suppression, de modification de configuration ni de gestion des permissions. |
 | Réseau | Filtre par plages IP (CIDR) devant tout, MCP et monitoring compris. L'assistant de configuration n'est accessible que depuis des adresses privées et se verrouille une fois terminé. |
+| Console | Le navigateur se connecte à `/api/console` (WebSocket). Le serveur vérifie la plage IP, l'origine de la page, et une session de compte Proxmox, puis relaie vers `vncwebsocket` de Proxmox avec le ticket de la personne. Le ticket VNC est demandé par la personne elle-même (droit `VM.Console` ou `Sys.Console`). Chaque ouverture est journalisée. |
 | Secrets | Clés MCP et lien de monitoring stockés sous forme d'empreinte SHA-256, affichés une seule fois. |
 | MCP | Deux niveaux de clé. Aucune action destructrice exposée. Actions et refus journalisés. |
 | Indexation | `X-Robots-Tag: noindex` et `robots.txt` qui bloque tout. |

@@ -185,7 +185,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const dismiss = useCallback((id: number) => setList((l) => l.filter((t) => t.id !== id)), []);
   const toast = useCallback((text: string, kind: Toast["kind"] = "info", action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setList((l) => [...l, { id, kind, text, action }]);
+    // Au plus 4 notifications à l'écran : les plus anciennes laissent la place
+    setList((l) => [...l, { id, kind, text, action }].slice(-4));
     setTimeout(() => dismiss(id), kind === "error" || action ? 8000 : 4000);
   }, [dismiss]);
 

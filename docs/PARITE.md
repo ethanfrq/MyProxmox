@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 22 | 169 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 35 | 116 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 41 | 49 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 39 | 17 | 6 | 4 |
+| [Nœud](#nœud) | 173 | 36 | 115 | 22 | 3 (lecture), 5 |
+| [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **168** | **451** | **61** | |
+| **Total** | **680** | **188** | **431** | **61** | |
 
 ## Phases
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 35 faits, 116 à faire, 22 hors périmètre.
+173 points d'entrée : 36 faits, 115 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -794,7 +794,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/vncwebsocket` | Opens a websocket for VNC traffic. | Sys.Console sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/vncwebsocket` | Opens a websocket for VNC traffic. | Sys.Console sur /nodes/{node} | Fait |
 
 ### Nœud : vzdump
 
@@ -812,7 +812,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 41 faits, 49 à faire, 7 hors périmètre.
+97 points d'entrée : 57 faits, 33 à faire, 7 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -833,24 +833,24 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/qemu/{vmid}/agent/exec-status` | Gets the status of the given pid started by the guest-agent | VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/file-read` | Reads the given file via guest agent. Is limited to 16777216 bytes. | VM.GuestAgent.FileRead ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/file-write` | Writes the given file via guest agent. | VM.GuestAgent.FileWrite ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-freeze` | Execute fsfreeze-freeze. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-status` | Execute fsfreeze-status. | VM.GuestAgent.Audit ou VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-thaw` | Execute fsfreeze-thaw. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/fstrim` | Execute fstrim. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-fsinfo` | Execute get-fsinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-freeze` | Execute fsfreeze-freeze. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-status` | Execute fsfreeze-status. | VM.GuestAgent.Audit ou VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/fsfreeze-thaw` | Execute fsfreeze-thaw. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/fstrim` | Execute fstrim. | VM.GuestAgent.FileSystemMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-fsinfo` | Execute get-fsinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-host-name` | Execute get-host-name. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-memory-block-info` | Execute get-memory-block-info. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-memory-blocks` | Execute get-memory-blocks. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-osinfo` | Execute get-osinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-osinfo` | Execute get-osinfo. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/get-time` | Execute get-time. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-timezone` | Execute get-timezone. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-users` | Execute get-users. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/agent/get-vcpus` | Execute get-vcpus. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-timezone` | Execute get-timezone. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-users` | Execute get-users. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/agent/get-vcpus` | Execute get-vcpus. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/info` | Execute info. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces` | Execute network-get-interfaces. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/ping` | Execute ping. | VM.GuestAgent.Audit ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/set-user-password` | Sets the password for the given user to the given password | VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/agent/shutdown` | Execute shutdown. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/set-user-password` | Sets the password for the given user to the given password | VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/agent/shutdown` | Execute shutdown. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/suspend-disk` | Execute suspend-disk. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/suspend-hybrid` | Execute suspend-hybrid. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
 | POST | `/nodes/{node}/qemu/{vmid}/agent/suspend-ram` | Execute suspend-ram. | VM.PowerMgmt ou VM.GuestAgent.Unrestricted sur /vms/{vmid} | À faire |
@@ -908,7 +908,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | PUT | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Update IP or Network settings | VM.Config.Network sur /vms/{vmid} | À faire |
 | DELETE | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | Fait |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | Fait |
 | PUT | `/nodes/{node}/qemu/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/refs` | Lists possible IPSet/Alias reference which are allowed in source/dest properties. | VM.Audit sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | Fait |
@@ -1026,29 +1026,29 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/termproxy` | Creates a TCP proxy connections. | VM.Console sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/termproxy` | Creates a TCP proxy connections. | VM.Console sur /vms/{vmid} | Fait |
 
 ### VM QEMU : unlink
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| PUT | `/nodes/{node}/qemu/{vmid}/unlink` | Unlink/delete disk images. | VM.Config.Disk sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/unlink` | Unlink/delete disk images. | VM.Config.Disk sur /vms/{vmid} | Fait |
 
 ### VM QEMU : vncproxy
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/vncproxy` | Creates a TCP VNC proxy connections. | VM.Console sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/vncproxy` | Creates a TCP VNC proxy connections. | VM.Console sur /vms/{vmid} | Fait |
 
 ### VM QEMU : vncwebsocket
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/qemu/{vmid}/vncwebsocket` | Opens a websocket for VNC traffic. | VM.Console sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/vncwebsocket` | Opens a websocket for VNC traffic. | VM.Console sur /vms/{vmid} | Fait |
 
 ## Conteneur LXC
 
-62 points d'entrée : 39 faits, 17 à faire, 6 hors périmètre.
+62 points d'entrée : 42 faits, 14 à faire, 6 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1097,7 +1097,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | PUT | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Update IP or Network settings | VM.Config.Network sur /vms/{vmid} | À faire |
 | DELETE | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | Fait |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | Fait |
 | PUT | `/nodes/{node}/lxc/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/refs` | Lists possible IPSet/Alias reference which are allowed in source/dest properties. | VM.Audit sur /vms/{vmid} | À faire |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | Fait |
@@ -1208,7 +1208,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/lxc/{vmid}/termproxy` | Creates a TCP proxy connection. | VM.Console sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/termproxy` | Creates a TCP proxy connection. | VM.Console sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : vncproxy
 
@@ -1220,7 +1220,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/lxc/{vmid}/vncwebsocket` | Opens a websocket for VNC traffic. | VM.Console sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/vncwebsocket` | Opens a websocket for VNC traffic. | VM.Console sur /vms/{vmid} | Fait |
 
 ## Stockage
 

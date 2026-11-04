@@ -42,9 +42,10 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 | | |
 |---|---|
 | Vue d'ensemble | CPU, RAM, swap, attente disque, charge, graphes de la dernière heure, plus gros consommateurs |
-| Machines | Liste avec IP, tags, dernière sauvegarde ; démarrer, éteindre, redémarrer, actions groupées |
-| Fiche machine | Consommation, réseau (IP, MAC, pont, VLAN), ressources, tags, snapshots, sauvegardes et restauration |
-| Création | Conteneur LXC (modèle, IP fixe ou DHCP) et VM (ISO, disque, pont) |
+| Machines | Liste triable avec IP, nœud, tags, dernière sauvegarde ; actions groupées (démarrer, éteindre, redémarrer, snapshot, sauvegarde, migration, tags) ; arbre des ressources à gauche (serveurs, pools, tags) avec clic droit |
+| Fiche machine | Tout ce que fait Proxmox : matériel complet (disques, CD, réseau, CPU, mémoire, UEFI, TPM, USB, PCI, série, audio, RNG, VirtIO-FS), Cloud-Init, options, ordre de boot, historique des tâches, notes en Markdown, snapshots en arbre, sauvegardes et restauration (fichiers isolés depuis PBS), réplication, migration, clonage, modèles, pare-feu, permissions, agent invité |
+| Console | Écran des VM (noVNC) et terminal des conteneurs (xterm.js) directement dans MyProxmox, par un relais WebSocket authentifié |
+| Création | Assistants complets VM et conteneur (avec récapitulatif), mode simple d'une page, création depuis un modèle |
 | Serveur | Services système, santé SMART, usure des SSD, pools ZFS, mises à jour, certificats, DNS |
 | Stockage | Occupation, contenu, téléchargement d'ISO et de modèles, estimation du remplissage |
 | Réseau | Interfaces, ponts, inventaire des IP de toutes les machines, export CSV |
@@ -79,6 +80,10 @@ Ces informations existent dans l'API Proxmox, mais elles sont éparpillées dans
 | Audit de sécurité | Santé SMART, usure des SSD, ZFS |
 | ![Claude et MCP](docs/images/claude.png) | ![Réseau](docs/images/reseau.png) |
 | Clés MCP et tutoriel | Inventaire réseau |
+| ![Matériel d'une VM](docs/images/machine-materiel.png) | ![Snapshots en arbre](docs/images/machine-snapshots.png) |
+| Matériel d'une VM | Snapshots en arbre |
+| ![Console intégrée](docs/images/machine-console.png) | ![Assistant de création](docs/images/creer-assistant.png) |
+| Console intégrée | Assistant de création |
 
 Les captures viennent du mode démo, avec de fausses données. Tu peux l'essayer [en ligne](https://myproxmox.vercel.app) ou en local (voir plus bas).
 

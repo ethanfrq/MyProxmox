@@ -175,7 +175,11 @@ export function Hardware({ ctx }: { ctx: GuestCtx }) {
           onConfirm={async () => {
             const k = confirm.row.key;
             if (confirm.kind === "erase") {
-              await put({ delete: k }, `${k} effacé`);
+              try {
+                await pve.put(`${ctx.base}/unlink`, { idlist: k, force: 1 });
+                toast(`${k} effacé`, "ok");
+                ctx.refresh();
+              } catch (e) { toast((e as Error).message, "error"); }
             } else if (confirm.kind === "detach") {
               await put({ delete: k }, `${k} détaché : il reste dans les disques inutilisés`);
             } else await put({ delete: k }, `${confirm.row.label} retiré`);

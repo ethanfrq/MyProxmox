@@ -135,17 +135,20 @@ export function guestRoute(method: string, node: string, rest: string[], p: Para
 
   // ── État ──
   if (method === "GET" && path === "status/current") {
-    return { ...resource(x), qmpstatus: running ? "running" : "stopped", agent: x.agent ? 1 : 0, ha: { managed: s.ha.some((h) => h.sid.endsWith(`:${x.vmid}`)) ? 1 : 0 }, lock: x.conf.lock, template: x.template ? 1 : 0, "running-machine": running ? "pc-q35-8.1+pve0" : undefined };
+    return { ...resource(x), qmpstatus: x.paused ? "paused" : running ? "running" : "stopped", agent: x.agent ? 1 : 0, ha: { managed: s.ha.some((h) => h.sid.endsWith(`:${x.vmid}`)) ? 1 : 0 }, lock: x.conf.lock, template: x.template ? 1 : 0, "running-machine": running ? "pc-q35-8.1+pve0" : undefined };
   }
   if (method === "POST" && sub[0] === "status") {
     const action = sub[1];
     locked();
     if (x.template) fail(500, "you can't start a vm if it's a template");
     if (action === "start" && running) fail(500, "VM already running");
-    if (["shutdown", "stop", "reboot", "suspend"].includes(action) && !running) fail(500, "VM not running");
+    if (["shutdown", "stop", "reboot", "suspend", "reset"].includes(action) && !running) fail(500, "VM not running");
+    if (action === "resume" && !x.paused) fail(500, "VM is not paused");
     if (action === "start" || action === "reboot" || action === "resume") Object.assign(x, { status: "running", started: action === "reboot" ? now() : x.started || now(), cpu: 0.05 });
     if (action === "start") x.started = now();
-    if (action === "shutdown" || action === "stop") Object.assign(x, { status: "stopped", cpu: 0 });
+    if (action === "shutdown" || action === "stop") Object.assign(x, { status: "stopped", cpu: 0, paused: false });
+    if (action === "suspend") x.paused = true;
+    if (action === "resume") x.paused = false;
     return task(action);
   }
 
@@ -236,6 +239,12 @@ export function guestRoute(method: string, node: string, rest: string[], p: Para
     if (method === "POST" && cmd === "fsfreeze-thaw") {
       x.frozen = false;
       return { result: DEMO_FS.length };
+    }
+    if (method === "GET" && cmd === "get-timezone") return { result: { zone: "CET", offset: 3600 } };
+    if (method === "GET" && cmd === "get-vcpus") return { result: Array.from({ length: x.cores }, (_, i) => ({ "logical-id": i, online: true, "can-offline": i > 0 })) };
+    if (method === "POST" && cmd === "set-user-password") {
+      if (!p.username || String(p.password ?? "").length < 5) fail(400, "password: value must be at least 5 characters long");
+      return { result: {} };
     }
     if (method === "POST" && cmd === "fstrim") return { result: { paths: DEMO_FS.map((f) => ({ path: f.mountpoint, trimmed: 1.2 * GB })) } };
   }

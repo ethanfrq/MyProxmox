@@ -39,6 +39,7 @@ export interface Guest {
   parent?: string; // snapshot dont dérive l'état actuel
   fw: FwStore;
   frozen?: boolean; // systèmes de fichiers gelés par l'agent
+  paused?: boolean; // machine en pause (suspend)
 }
 export interface Snap { name: string; description: string; snaptime: number; parent?: string; vmstate?: number; conf?: Record<string, string> }
 
