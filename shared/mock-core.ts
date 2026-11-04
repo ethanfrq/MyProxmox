@@ -345,6 +345,8 @@ export function storages(node = NODE) {
     { storage: "local-lvm", type: "lvmthin", content: "images,rootdir", shared: 0, active: 1, enabled: 1, used, total: 832 * GB, avail: 832 * GB - used, used_fraction: used / (832 * GB) },
     { storage: "backup-nas", type: "nfs", content: "backup", shared: 1, active: 1, enabled: 1, used: backupUsed, total: 1.8e12, avail: 1.8e12 - backupUsed, used_fraction: backupUsed / 1.8e12 },
     { storage: "pbs", type: "pbs", content: "backup", shared: 1, active: 1, enabled: 1, used: pbsUsed, total: 4e12, avail: 4e12 - pbsUsed, used_fraction: pbsUsed / 4e12 },
+    // Stockages ajoutés depuis la page Disques du nœud
+    ...((S() as Any).extraStorages ?? []).filter((x: Any) => !x.nodes || String(x.nodes).split(",").includes(node)).map((x: Any) => ({ storage: x.storage, type: x.type, content: x.content, shared: 0, active: 1, enabled: 1, used: 0, total: 500 * GB, avail: 500 * GB, used_fraction: 0 })),
   ];
 }
 

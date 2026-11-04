@@ -40,6 +40,9 @@ export interface Target {
 }
 
 export function request(target: Target, method: Method, path: string, headers: Record<string, string>, params?: Params): Promise<any> {
+  // _full=1 : renvoie aussi les champs à côté de « data » (ex. « changes » du réseau d'un nœud)
+  const full = !!params?._full;
+  if (full) params = Object.fromEntries(Object.entries(params!).filter(([k]) => k !== "_full"));
   const qs = encode(params);
   const hasBody = method === "POST" || method === "PUT";
   const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}${!hasBody && qs ? `?${qs}` : ""}`);
@@ -68,7 +71,7 @@ export function request(target: Target, method: Method, path: string, headers: R
           const msg = fields || json?.message || (status === 401 ? "identifiants refusés par Proxmox" : reason || text.trim().slice(0, 200) || `erreur ${status}`);
           reject(new PveError(status, String(msg).trim()));
         } else {
-          resolve(json?.data);
+          resolve(full ? { data: json?.data, changes: json?.changes ?? null } : json?.data);
         }
       });
     });

@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 22 | 169 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 36 | 115 | 22 | 3 (lecture), 5 |
+| [Nœud](#nœud) | 173 | 45 | 106 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **188** | **431** | **61** | |
+| **Total** | **680** | **197** | **422** | **61** | |
 
 ## Phases
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 36 faits, 115 à faire, 22 hors périmètre.
+173 points d'entrée : 45 faits, 106 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -614,13 +614,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/journal` | Read Journal | Sys.Syslog sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/journal` | Read Journal | Sys.Syslog sur /nodes/{node} | Fait |
 
 ### Nœud : migrateall
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/migrateall` | Migrate all VMs and Containers. | The 'VM.Migrate' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | À faire |
+| POST | `/nodes/{node}/migrateall` | Migrate all VMs and Containers. | The 'VM.Migrate' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | Fait |
 
 ### Nœud : netstat
 
@@ -719,29 +719,29 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/startall` | Start all VMs and containers located on this node (by default only those with onboot=1). | The 'VM.PowerMgmt' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | À faire |
+| POST | `/nodes/{node}/startall` | Start all VMs and containers located on this node (by default only those with onboot=1). | The 'VM.PowerMgmt' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | Fait |
 
 ### Nœud : status
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/status` | Read node status | Sys.Audit sur /nodes/{node} | Fait |
-| POST | `/nodes/{node}/status` | Reboot or shutdown a node. | Sys.PowerMgmt sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/status` | Reboot or shutdown a node. | Sys.PowerMgmt sur /nodes/{node} | Fait |
 
 ### Nœud : stopall
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/stopall` | Stop all VMs and Containers. | The 'VM.PowerMgmt' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | À faire |
+| POST | `/nodes/{node}/stopall` | Stop all VMs and Containers. | The 'VM.PowerMgmt' permission is required on '/' or on '/vms/<ID>' for each ID passed via the 'vms' parameter. | Fait |
 
 ### Nœud : subscription
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/subscription` | Read subscription info. | tout utilisateur connecté | Fait |
-| POST | `/nodes/{node}/subscription` | Update subscription info. | Sys.Modify sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/subscription` | Set subscription key. | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/subscription` | Delete subscription key of this node. | Sys.Modify sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/subscription` | Update subscription info. | Sys.Modify sur /nodes/{node} | Fait |
+| PUT | `/nodes/{node}/subscription` | Set subscription key. | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/subscription` | Delete subscription key of this node. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : suspendall
 
@@ -769,7 +769,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/termproxy` | Creates a VNC Shell proxy. | Sys.Console sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/termproxy` | Creates a VNC Shell proxy. | Sys.Console sur /nodes/{node} | Fait |
 
 ### Nœud : time
 

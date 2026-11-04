@@ -10,6 +10,7 @@ import type { Any, Params } from "./mock-core";
 import { NODE2, NODES, isVolumeKey, sizeOf } from "./mock-core";
 import { guestRoute } from "./mock-guest";
 import { firewallRoute } from "./mock-firewall";
+import { acmeRoute, nodeRoute } from "./mock-node";
 
 export { resetMock, PVE_PRIVS } from "./mock-core";
 
@@ -130,6 +131,10 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   if (route === "GET /cluster/tasks") return s.tasks.slice(0, 60).map(({ log, ...t }) => t);
   if (route === "GET /cluster/backup") return [{ id: "backup-nightly", enabled: 1, schedule: "02:00", storage: "backup-nas", vmid: "100,101,102,104,106", mode: "snapshot", compress: "zstd", "next-run": now() + 8 * 3600 }];
   if (route === "GET /cluster/backup-info/not-backed-up") return s.guests.filter((x) => ![100, 101, 102, 104, 106].includes(x.vmid)).map((x) => ({ vmid: x.vmid, name: x.name, type: x.type }));
+  if (seg[0] === "cluster" && seg[1] === "acme") {
+    const ar = acmeRoute(method, seg.slice(2), p);
+    if (ar !== undefined) return ar;
+  }
   if (seg[0] === "cluster" && seg[1] === "firewall") {
     const fr = firewallRoute(s.clusterFw, method, seg.slice(2), p, fail);
     if (fr !== undefined) return fr;
@@ -152,6 +157,9 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   // ── Machines (VM et conteneurs) ──────────────────────────────────
   const gr = guestRoute(method, node, rest, p);
   if (gr !== undefined) return gr;
+  // ── Nœud : alimentation, réseau, DNS, certificats, apt, disques, Ceph, services, journaux ──
+  const nr = nodeRoute(method, node, rest, p);
+  if (nr !== undefined) return nr;
 
   // ── Nœud ─────────────────────────────────────────────────────────
   if (r === "GET /status") {
@@ -205,35 +213,11 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
     if (method === "GET" && rest[2] === "log") return [`${new Date().toISOString()} ${j!.id}: start replication job`, `${new Date().toISOString()} ${j!.id}: guest => VM ${j!.guest}, running => 1`, `${new Date().toISOString()} ${j!.id}: end replication job`].map((t, i) => ({ n: i + 1, t }));
     if (method === "GET" && rest[2] === "status") return { id: j!.id, last_sync: j!.last_sync, fail_count: 0 };
   }
-  if (r === "GET /network") {
-    return [
-      { iface: "lo", type: "loopback", active: 1, autostart: 1, method: "loopback" },
-      { iface: "enp3s0", type: "eth", active: 1, autostart: 0, method: "manual", exists: 1 },
-      { iface: "enp4s0", type: "eth", active: 0, autostart: 0, method: "manual", exists: 1 },
-      { iface: "vmbr0", type: "bridge", active: 1, autostart: 1, method: "static", cidr: "10.0.1.101/24", address: "10.0.1.101", netmask: "24", gateway: "10.0.1.1", bridge_ports: "enp3s0", bridge_vlan_aware: 1, comments: "Réseau principal" },
-      { iface: "vmbr1", type: "bridge", active: 1, autostart: 1, method: "static", cidr: "192.168.50.1/24", bridge_ports: "", comments: "Lab isolé" },
-    ];
-  }
   if (r === "GET /netstat") {
     return s.guests.filter((x) => x.status === "running").map((x) => {
       const c = counters(x);
       return { dev: `${x.type === "qemu" ? "tap" : "veth"}${x.vmid}i0`, vmid: String(x.vmid), in: String(c.netin), out: String(c.netout) };
     });
-  }
-  if (r === "GET /dns") return { search: "maison.lan", dns1: "10.0.1.53", dns2: "1.1.1.1" };
-  if (r === "GET /time") return { timezone: "Europe/Paris", localtime: now() + 3600, time: now() };
-  if (r === "GET /services") {
-    return ["pveproxy", "pvedaemon", "pvestatd", "pve-cluster", "pve-firewall", "chronyd", "sshd", "postfix", "cron", "spiceproxy", "corosync"].map((name) => ({
-      name, service: name, state: name === "corosync" ? "stopped" : "running", "active-state": name === "corosync" ? "inactive" : "active", "unit-state": name === "corosync" ? "disabled" : "enabled",
-      desc: { pveproxy: "Interface web et API", pvedaemon: "Démon de l'API", pvestatd: "Collecte des statistiques", "pve-cluster": "Système de fichiers du cluster", "pve-firewall": "Pare-feu Proxmox", chronyd: "Synchronisation de l'heure", sshd: "Serveur SSH", postfix: "Envoi de mails", cron: "Tâches planifiées", spiceproxy: "Proxy SPICE", corosync: "Communication du cluster (inutile sur un seul nœud)" }[name],
-    }));
-  }
-  if (r === "GET /disks/list") {
-    return [
-      { devpath: "/dev/nvme0n1", model: "Samsung SSD 980 PRO 1TB", serial: "S5GXNF0R123456", size: 1000 * GB, type: "nvme", health: "PASSED", wearout: 91, used: "LVM", gpt: 1 },
-      { devpath: "/dev/sda", model: "WDC WD40EFRX-68N32N0", serial: "WD-WCC7K1234567", size: 4000 * GB, type: "hdd", health: "PASSED", wearout: "N/A", rpm: 5400, used: "ZFS", gpt: 1 },
-      { devpath: "/dev/sdb", model: "WDC WD40EFRX-68N32N0", serial: "WD-WCC7K7654321", size: 4000 * GB, type: "hdd", health: "FAILED", wearout: "N/A", rpm: 5400, used: "ZFS", gpt: 1 },
-    ];
   }
   if (r === "GET /disks/smart") {
     if (String(p.disk).includes("nvme")) {
@@ -250,7 +234,6 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
       ],
     };
   }
-  if (r === "GET /disks/zfs") return [{ name: "tank", size: 4000 * GB, alloc: 1.9e12, free: 2.1e12, frag: 12, dedup: 1, health: "DEGRADED" }];
   if (r === "GET /apt/update") {
     return [
       { Package: "pve-manager", OldVersion: "8.4.1", Version: "8.4.5", Priority: "important", Origin: "Proxmox", Section: "admin", Title: "Interface et API de Proxmox VE" },
@@ -259,19 +242,10 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
       { Package: "libc6", OldVersion: "2.36-9+deb12u9", Version: "2.36-9+deb12u10", Priority: "required", Origin: "Debian", Section: "libs", Title: "Bibliothèque C (correctif de sécurité)" },
     ];
   }
-  if (r === "GET /certificates/info") {
-    return [
-      { filename: "pve-root-ca.pem", subject: "/CN=Proxmox Virtual Environment/OU=abc/O=PVE Cluster Manager CA", issuer: "PVE Cluster Manager CA", notafter: now() + 3200 * DAY, notbefore: now() - 400 * DAY, fingerprint: "AA:BB" },
-      { filename: "pve-ssl.pem", subject: `/CN=${NODE}.maison.lan`, issuer: "PVE Cluster Manager CA", notafter: now() + 9 * DAY, notbefore: now() - 721 * DAY, san: [`${NODE}.maison.lan`, "10.0.1.101"], fingerprint: "CC:DD" },
-    ];
-  }
-  if (r === "GET /subscription") return { status: "notfound", message: "There is no subscription key" };
-  if (r === "GET /syslog" || r === "GET /journal") return SYSLOG();
   if (rest[0] === "firewall") {
     const fr = firewallRoute(s.nodeFw[node], method, rest.slice(1), p, fail);
     if (fr !== undefined) return fr;
   }
-  if (r === "GET /hosts") return { data: "127.0.0.1 localhost\n10.0.1.101 pve.maison.lan pve\n" };
 
   // ── Stockage ─────────────────────────────────────────────────────
   if (r === "GET /storage") {

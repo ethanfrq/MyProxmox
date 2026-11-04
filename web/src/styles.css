@@ -623,3 +623,6 @@ a.user-chip:hover { color: var(--panel); }
 .console-term { height: 520px; background: var(--code-bg); padding: 6px; }
 .console-vnc { height: 620px; background: var(--code-bg); }
 .console-vnc:fullscreen { height: 100vh; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.filters .input { height: 32px; min-width: 150px; }
