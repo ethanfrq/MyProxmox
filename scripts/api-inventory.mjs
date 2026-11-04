@@ -44,7 +44,9 @@ const HORS_PERIMETRE = {
 const ALIAS_VALUES = {
   type: ["qemu", "lxc"],
   "g.type": ["qemu", "lxc"],
-  kind: ["qemu", "lxc", "start", "shutdown", "reboot", "stop"],
+  kind: ["qemu", "lxc", "start", "shutdown", "reboot", "stop", "pci", "usb", "dir", "nfs", "cifs", "iscsi", "pbs", "lvm", "lvmthin", "zfs", "glusterfs"],
+  "v.kind": ["sendmail", "smtp", "gotify", "webhook"],
+  "t.type": ["sendmail", "smtp", "gotify", "webhook"],
   action: ["start", "shutdown", "reboot", "stop"],
   "r.type": ["qemu", "lxc"],
   "ctx.type": ["qemu", "lxc"],

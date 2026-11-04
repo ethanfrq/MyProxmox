@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 51 | 140 | 12 | 3 (lecture sauvegardes), 6 |
+| [Datacenter](#datacenter) | 203 | 76 | 115 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 14 | 37 | 9 | 3 (quorum, HA, tâches), 6 |
 | [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
-| [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
+| [Stockage](#stockage) | 33 | 18 | 13 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **283** | **336** | **61** | |
+| **Total** | **680** | **319** | **300** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 51 faits, 140 à faire, 12 hors périmètre.
+203 points d'entrée : 76 faits, 115 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -143,20 +143,20 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/cluster/mapping` | List resource types. | tout utilisateur connecté | Hors périmètre |
 | GET | `/cluster/mapping/dir` | List directory mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/dir/<id>'. | Fait |
-| POST | `/cluster/mapping/dir` | Create a new directory mapping. | Mapping.Modify sur /mapping/dir | À faire |
+| POST | `/cluster/mapping/dir` | Create a new directory mapping. | Mapping.Modify sur /mapping/dir | Fait |
 | GET | `/cluster/mapping/dir/{id}` | Get directory mapping. | Mapping.Use sur /mapping/dir/{id} ou Mapping.Modify sur /mapping/dir/{id} ou Mapping.Audit sur /mapping/dir/{id} | À faire |
-| PUT | `/cluster/mapping/dir/{id}` | Update a directory mapping. | Mapping.Modify sur /mapping/dir/{id} | À faire |
-| DELETE | `/cluster/mapping/dir/{id}` | Remove directory mapping. | Mapping.Modify sur /mapping/dir | À faire |
+| PUT | `/cluster/mapping/dir/{id}` | Update a directory mapping. | Mapping.Modify sur /mapping/dir/{id} | Fait |
+| DELETE | `/cluster/mapping/dir/{id}` | Remove directory mapping. | Mapping.Modify sur /mapping/dir | Fait |
 | GET | `/cluster/mapping/pci` | List PCI Hardware Mapping | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/pci/<id>'. | Fait |
-| POST | `/cluster/mapping/pci` | Create a new hardware mapping. | Mapping.Modify sur /mapping/pci | À faire |
+| POST | `/cluster/mapping/pci` | Create a new hardware mapping. | Mapping.Modify sur /mapping/pci | Fait |
 | GET | `/cluster/mapping/pci/{id}` | Get PCI Mapping. | Mapping.Use sur /mapping/pci/{id} ou Mapping.Modify sur /mapping/pci/{id} ou Mapping.Audit sur /mapping/pci/{id} | À faire |
-| PUT | `/cluster/mapping/pci/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/pci/{id} | À faire |
-| DELETE | `/cluster/mapping/pci/{id}` | Remove Hardware Mapping. | Mapping.Modify sur /mapping/pci | À faire |
+| PUT | `/cluster/mapping/pci/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/pci/{id} | Fait |
+| DELETE | `/cluster/mapping/pci/{id}` | Remove Hardware Mapping. | Mapping.Modify sur /mapping/pci | Fait |
 | GET | `/cluster/mapping/usb` | List USB Hardware Mappings | Only lists entries where you have 'Mapping.Modify', 'Mapping.Use' or 'Mapping.Audit' permissions on '/mapping/usb/<id>'. | Fait |
-| POST | `/cluster/mapping/usb` | Create a new hardware mapping. | Mapping.Modify sur /mapping/usb | À faire |
+| POST | `/cluster/mapping/usb` | Create a new hardware mapping. | Mapping.Modify sur /mapping/usb | Fait |
 | GET | `/cluster/mapping/usb/{id}` | Get USB Mapping. | Mapping.Audit sur /mapping/usb/{id} ou Mapping.Use sur /mapping/usb/{id} ou Mapping.Modify sur /mapping/usb/{id} | À faire |
-| PUT | `/cluster/mapping/usb/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/usb/{id} | À faire |
-| DELETE | `/cluster/mapping/usb/{id}` | Remove Hardware Mapping. | Mapping.Modify sur /mapping/usb | À faire |
+| PUT | `/cluster/mapping/usb/{id}` | Update a hardware mapping. | Mapping.Modify sur /mapping/usb/{id} | Fait |
+| DELETE | `/cluster/mapping/usb/{id}` | Remove Hardware Mapping. | Mapping.Modify sur /mapping/usb | Fait |
 
 ### Datacenter : metrics
 
@@ -177,25 +177,25 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/cluster/notifications` | Index for notification-related API endpoints. | tout utilisateur connecté | Hors périmètre |
 | GET | `/cluster/notifications/endpoints` | Index for all available endpoint types. | tout utilisateur connecté | Hors périmètre |
 | GET | `/cluster/notifications/endpoints/gotify` | Returns a list of all gotify endpoints | Mapping.Audit sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/endpoints/gotify` | Create a new gotify endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| GET | `/cluster/notifications/endpoints/gotify/{name}` | Return a specific gotify endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| PUT | `/cluster/notifications/endpoints/gotify/{name}` | Update existing gotify endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| DELETE | `/cluster/notifications/endpoints/gotify/{name}` | Remove gotify endpoint | Mapping.Modify sur /mapping/notifications | À faire |
+| POST | `/cluster/notifications/endpoints/gotify` | Create a new gotify endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| GET | `/cluster/notifications/endpoints/gotify/{name}` | Return a specific gotify endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | Fait |
+| PUT | `/cluster/notifications/endpoints/gotify/{name}` | Update existing gotify endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| DELETE | `/cluster/notifications/endpoints/gotify/{name}` | Remove gotify endpoint | Mapping.Modify sur /mapping/notifications | Fait |
 | GET | `/cluster/notifications/endpoints/sendmail` | Returns a list of all sendmail endpoints | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/endpoints/sendmail` | Create a new sendmail endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| GET | `/cluster/notifications/endpoints/sendmail/{name}` | Return a specific sendmail endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| PUT | `/cluster/notifications/endpoints/sendmail/{name}` | Update existing sendmail endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| DELETE | `/cluster/notifications/endpoints/sendmail/{name}` | Remove sendmail endpoint | Mapping.Modify sur /mapping/notifications | À faire |
+| POST | `/cluster/notifications/endpoints/sendmail` | Create a new sendmail endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| GET | `/cluster/notifications/endpoints/sendmail/{name}` | Return a specific sendmail endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | Fait |
+| PUT | `/cluster/notifications/endpoints/sendmail/{name}` | Update existing sendmail endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| DELETE | `/cluster/notifications/endpoints/sendmail/{name}` | Remove sendmail endpoint | Mapping.Modify sur /mapping/notifications | Fait |
 | GET | `/cluster/notifications/endpoints/smtp` | Returns a list of all smtp endpoints | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/endpoints/smtp` | Create a new smtp endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| GET | `/cluster/notifications/endpoints/smtp/{name}` | Return a specific smtp endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| PUT | `/cluster/notifications/endpoints/smtp/{name}` | Update existing smtp endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| DELETE | `/cluster/notifications/endpoints/smtp/{name}` | Remove smtp endpoint | Mapping.Modify sur /mapping/notifications | À faire |
+| POST | `/cluster/notifications/endpoints/smtp` | Create a new smtp endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| GET | `/cluster/notifications/endpoints/smtp/{name}` | Return a specific smtp endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | Fait |
+| PUT | `/cluster/notifications/endpoints/smtp/{name}` | Update existing smtp endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| DELETE | `/cluster/notifications/endpoints/smtp/{name}` | Remove smtp endpoint | Mapping.Modify sur /mapping/notifications | Fait |
 | GET | `/cluster/notifications/endpoints/webhook` | Returns a list of all webhook endpoints | Mapping.Audit sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/endpoints/webhook` | Create a new webhook endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| GET | `/cluster/notifications/endpoints/webhook/{name}` | Return a specific webhook endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| PUT | `/cluster/notifications/endpoints/webhook/{name}` | Update existing webhook endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | À faire |
-| DELETE | `/cluster/notifications/endpoints/webhook/{name}` | Remove webhook endpoint | Mapping.Modify sur /mapping/notifications | À faire |
+| POST | `/cluster/notifications/endpoints/webhook` | Create a new webhook endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| GET | `/cluster/notifications/endpoints/webhook/{name}` | Return a specific webhook endpoint | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | Fait |
+| PUT | `/cluster/notifications/endpoints/webhook/{name}` | Update existing webhook endpoint | Mapping.Modify sur /mapping/notifications et (Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /) | Fait |
+| DELETE | `/cluster/notifications/endpoints/webhook/{name}` | Remove webhook endpoint | Mapping.Modify sur /mapping/notifications | Fait |
 | GET | `/cluster/notifications/matcher-field-values` | Returns known notification metadata fields and their known values | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
 | GET | `/cluster/notifications/matcher-fields` | Returns known notification metadata fields | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
 | GET | `/cluster/notifications/matchers` | Returns a list of all matchers | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | Fait |
@@ -1224,7 +1224,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Stockage
 
-33 points d'entrée : 7 faits, 24 à faire, 2 hors périmètre.
+33 points d'entrée : 18 faits, 13 à faire, 2 hors périmètre.
 
 ### Stockage : (racine)
 
@@ -1248,11 +1248,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/storage` | Storage index. | Only list entries where you have 'Datastore.Audit' or 'Datastore.AllocateSpace' permissions on '/storage/<storage>' | À faire |
-| POST | `/storage` | Create a new storage. | Datastore.Allocate sur /storage | À faire |
+| GET | `/storage` | Storage index. | Only list entries where you have 'Datastore.Audit' or 'Datastore.AllocateSpace' permissions on '/storage/<storage>' | Fait |
+| POST | `/storage` | Create a new storage. | Datastore.Allocate sur /storage | Fait |
 | GET | `/storage/{storage}` | Read storage configuration. | Datastore.Allocate sur /storage/{storage} | À faire |
-| PUT | `/storage/{storage}` | Update storage configuration. | Datastore.Allocate sur /storage | À faire |
-| DELETE | `/storage/{storage}` | Delete storage configuration. | Datastore.Allocate sur /storage | À faire |
+| PUT | `/storage/{storage}` | Update storage configuration. | Datastore.Allocate sur /storage | Fait |
+| DELETE | `/storage/{storage}` | Delete storage configuration. | Datastore.Allocate sur /storage | Fait |
 
 ### Stockage : download-url
 
@@ -1309,13 +1309,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/scan` | Index of available scan methods | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/scan/cifs` | Scan remote CIFS server. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/iscsi` | Scan remote iSCSI server. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/lvm` | List local LVM volume groups. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/lvmthin` | List local LVM Thin Pools. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/nfs` | Scan remote NFS server. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/pbs` | Scan remote Proxmox Backup Server. | Datastore.Allocate sur /storage | À faire |
-| GET | `/nodes/{node}/scan/zfs` | Scan zfs pool list on local node. | Datastore.Allocate sur /storage | À faire |
+| GET | `/nodes/{node}/scan/cifs` | Scan remote CIFS server. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/iscsi` | Scan remote iSCSI server. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/lvm` | List local LVM volume groups. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/lvmthin` | List local LVM Thin Pools. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/nfs` | Scan remote NFS server. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/pbs` | Scan remote Proxmox Backup Server. | Datastore.Allocate sur /storage | Fait |
+| GET | `/nodes/{node}/scan/zfs` | Scan zfs pool list on local node. | Datastore.Allocate sur /storage | Fait |
 
 ### Stockage : status
 

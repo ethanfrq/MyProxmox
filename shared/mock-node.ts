@@ -447,6 +447,21 @@ export function nodeRoute(method: string, node: string, rest: string[], p: Param
     if (method === "GET" && sub === "log") return [`${new Date().toISOString()} mon.${NODE2} (mon.0) 128 : cluster [INF] overall HEALTH_OK`, `${new Date().toISOString()} mgr.${NODE2} (mgr.4103) 552 : cluster [DBG] pgmap v552: 33 pgs: 33 active+clean`].map((t, i) => ({ n: i + 1, t }));
   }
 
+  // ── Recherche de stockages (sert aussi de test de connexion) ──
+  if (rest[0] === "scan" && method === "GET") {
+    const unreachable = (host: unknown) => /^(0\.|192\.0\.2\.|10\.9\.)/.test(String(host)) && fail(500, `storage '${host}' is not online (connexion refusée)`);
+    switch (rest[1]) {
+      case "nfs": unreachable(p.server); return [{ path: "/volume1/proxmox", options: "10.0.1.0/24" }, { path: "/volume1/iso", options: "10.0.1.0/24" }, { path: "/volume1/media", options: "*" }];
+      case "cifs": unreachable(p.server); if (p.password === "faux") fail(500, "NT_STATUS_LOGON_FAILURE"); return [{ share: "proxmox", description: "Sauvegardes" }, { share: "iso", description: "Images" }, { share: "homes", description: "" }];
+      case "iscsi": unreachable(p.portal); return [{ target: "iqn.2000-01.com.synology:nas.Target-1.a1b2c3", portal: `${p.portal}:3260` }];
+      case "pbs": unreachable(p.server); if (!p.fingerprint && !p.password) fail(400, "password: property is missing"); return [{ store: "homelab", comment: "Datastore principal" }, { store: "archives", comment: "Copies longues" }];
+      case "lvm": return [{ vg: "pve", size: 999 * GB, free: 16 * GB }, ...n.lvm.filter((v) => v.vg !== "pve").map((v) => ({ vg: v.vg, size: v.size, free: v.free }))];
+      case "lvmthin": return n.lvmthin.filter((t) => !p.vg || t.vg === p.vg).map((t) => ({ lv: t.lv, lv_size: t.lv_size }));
+      case "zfs": return n.zfs.map((z) => ({ pool: z.name, size: z.size, free: z.free }));
+      case "glusterfs": unreachable(p.server); return [{ volname: "gv0" }];
+    }
+  }
+
   // ── Services ──
   if (r === "GET /services") return n.services.map((x) => ({ name: x.name, service: x.name, desc: x.desc, state: x.state === "dead" ? "stopped" : x.state, "active-state": x.state === "running" ? "active" : "inactive", "unit-state": x.unit }));
   if (rest[0] === "services" && rest[1]) {

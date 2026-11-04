@@ -73,3 +73,35 @@ test("mappings, métriques, notifications", async ({ page }) => {
   await expect(page.locator("tr", { hasText: t }).last()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("stockage : ajouter un NFS (partages trouvés sur le serveur), modifier, retirer", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "stockage");
+  await page.getByRole("button", { name: "Ajouter" }).click();
+  await page.getByRole("menuitem", { name: "NFS" }).click();
+  const id = uniq("nas");
+  const dlg = page.getByRole("dialog");
+  await dlg.getByLabel("Identifiant").fill(id);
+  await dlg.getByLabel("Serveur").fill("10.0.1.10");
+  await expect(dlg.getByLabel("Partage NFS")).toContainText("/volume1/iso");
+  await dlg.getByLabel("Partage NFS").selectOption("/volume1/iso");
+  await dlg.getByLabel("Images ISO").check();
+  await dlg.getByRole("button", { name: "Enregistrer" }).click();
+  const row = page.locator("tr", { hasText: id });
+  await expect(row).toContainText("10.0.1.10:/volume1/iso");
+  await row.getByRole("button", { name: "Modifier" }).click();
+  await page.getByRole("dialog").getByLabel("Désactivé").check();
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(row).toContainText("désactivé");
+  await row.getByRole("button", { name: "Retirer" }).click();
+  await page.getByRole("dialog").getByRole("textbox").fill(id);
+  await page.getByRole("dialog").getByRole("button", { name: "Retirer" }).click();
+  await expect(page.locator("tr", { hasText: id })).toHaveCount(0);
+  // Un serveur injoignable donne une erreur claire dans le formulaire
+  await page.getByRole("button", { name: "Ajouter" }).click();
+  await page.getByRole("menuitem", { name: "NFS" }).click();
+  await page.getByRole("dialog").getByLabel("Serveur").fill("192.0.2.1");
+  await expect(page.getByRole("dialog")).toContainText("Liste indisponible");
+  expect(errors.filter((e) => !e.includes("500"))).toEqual([]);
+});
