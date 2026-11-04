@@ -46,7 +46,7 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 | Fiche machine | Tout ce que fait Proxmox : matériel complet (disques, CD, réseau, CPU, mémoire, UEFI, TPM, USB, PCI, série, audio, RNG, VirtIO-FS), Cloud-Init, options, ordre de boot, historique des tâches, notes en Markdown, snapshots en arbre, sauvegardes et restauration (fichiers isolés depuis PBS), réplication, migration, clonage, modèles, pare-feu, permissions, agent invité |
 | Console | Écran des VM (noVNC) et terminal des conteneurs (xterm.js) directement dans MyProxmox, par un relais WebSocket authentifié |
 | Création | Assistants complets VM et conteneur (avec récapitulatif), mode simple d'une page, création depuis un modèle |
-| Serveur | Services système, santé SMART, usure des SSD, pools ZFS, mises à jour, certificats, DNS |
+| Nœud | Tout ce que Proxmox permet sur un nœud : résumé et alimentation (double confirmation), tout démarrer / arrêter / migrer, shell intégré, réseau en édition complète avec diff avant application, DNS, hosts, fuseau, certificats et ACME, mises à jour (journal des changements, mise à niveau dans le shell, dépôts APT), disques (SMART, GPT, effacement, LVM, LVM-thin, répertoires, assistant ZFS), Ceph, services, journal en direct, tâches, abonnement, pare-feu |
 | Stockage | Occupation, contenu, téléchargement d'ISO et de modèles, estimation du remplissage |
 | Réseau | Interfaces, ponts, inventaire des IP de toutes les machines, export CSV |
 | Sauvegardes | Couverture par machine, tâches planifiées, snapshots oubliés |
@@ -84,6 +84,8 @@ Ces informations existent dans l'API Proxmox, mais elles sont éparpillées dans
 | Matériel d'une VM | Snapshots en arbre |
 | ![Console intégrée](docs/images/machine-console.png) | ![Assistant de création](docs/images/creer-assistant.png) |
 | Console intégrée | Assistant de création |
+| ![Réseau du nœud](docs/images/noeud-reseau.png) | ![Journal du nœud](docs/images/noeud-journal.png) |
+| Réseau du nœud : diff avant application | Journal système en direct |
 
 Les captures viennent du mode démo, avec de fausses données. Tu peux l'essayer [en ligne](https://myproxmox.vercel.app) ou en local (voir plus bas).
 

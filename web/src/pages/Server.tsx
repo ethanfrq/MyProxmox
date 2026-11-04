@@ -9,7 +9,8 @@ import { NodeServices } from "./node/Services";
 import { NodeLogs } from "./node/Logs";
 import { NodeSubscription } from "./node/Subscription";
 import { NodeReplication } from "./node/Replication";
-import { NodeLegacy } from "./node/Legacy";
+import { NodeDisks } from "./node/Disks";
+import { NodeCeph } from "./node/Ceph";
 import { NodeNetwork } from "./node/Network";
 import { NodeSystem } from "./node/System";
 import { NodeCertificates } from "./node/Certificates";
@@ -51,12 +52,12 @@ export function Server() {
         <>
           {tab === "resume" && <NodeSummary node={node} />}
           {tab === "shell" && <Suspense fallback={<div className="empty">Chargement du shell…</div>}><NodeShell node={node} cmd={params.get("cmd") === "upgrade" ? "upgrade" : undefined} /></Suspense>}
-          {tab === "disques" && <NodeLegacy node={node} tab={tab} />}
+          {tab === "disques" && <NodeDisks node={node} />}
           {tab === "maj" && <NodeUpdates node={node} />}
           {tab === "reseau" && <NodeNetwork node={node} />}
           {tab === "systeme" && <NodeSystem node={node} />}
           {tab === "certificats" && <NodeCertificates node={node} />}
-          {tab === "ceph" && <Notice>Cette partie arrive dans la suite de la phase 5.</Notice>}
+          {tab === "ceph" && <NodeCeph node={node} />}
           {tab === "services" && <NodeServices node={node} />}
           {tab === "replication" && <NodeReplication node={node} />}
           {tab === "journaux" && <NodeLogs node={node} />}

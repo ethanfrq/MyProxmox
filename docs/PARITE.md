@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 33 | 158 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 71 | 80 | 22 | 3 (lecture), 5 |
+| [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **234** | **385** | **61** | |
+| **Total** | **680** | **260** | **359** | **61** | |
 
 ## Phases
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 71 faits, 80 à faire, 22 hors périmètre.
+173 points d'entrée : 97 faits, 54 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -482,45 +482,45 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/ceph` | Directory index. | Sys.Audit ou Datastore.Audit sur / | Hors périmètre |
 | GET | `/nodes/{node}/ceph/cfg` | Directory index. | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/ceph/cfg/db` | Get the Ceph configuration database. | Sys.Audit ou Datastore.Audit sur / | À faire |
-| GET | `/nodes/{node}/ceph/cfg/raw` | Get the Ceph configuration file. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/cfg/raw` | Get the Ceph configuration file. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | GET | `/nodes/{node}/ceph/cfg/value` | Get configured values from either ceph.conf or the mon config DB. Underscores in section and key names are normalised to hyphens in the response, regardless of how they're written in the source. | Sys.Audit sur / | À faire |
 | GET | `/nodes/{node}/ceph/cmd-safety` | Heuristical check if it is safe to perform an action. | Sys.Audit sur / | À faire |
 | GET | `/nodes/{node}/ceph/crush` | Get OSD crush map | Sys.Audit ou Datastore.Audit sur / | À faire |
-| GET | `/nodes/{node}/ceph/fs` | Directory index. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/fs` | Directory index. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | POST | `/nodes/{node}/ceph/fs/{name}` | Create a Ceph filesystem | Sys.Modify sur / | À faire |
 | DELETE | `/nodes/{node}/ceph/fs/{name}` | Destroy a Ceph filesystem. Refuses if any PVE storage entry of type 'cephfs' still references the filesystem and is not disabled. Optionally also removes the storage entries and/or the underlying metadata and data pools. | Sys.Modify sur / | À faire |
 | POST | `/nodes/{node}/ceph/init` | Create the initial Ceph default configuration and set up symlinks. Idempotent on re-call: if a [global] section already exists in ceph.conf, the existing fsid / auth / pool defaults are preserved and most parameters are… | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/log` | Read ceph log | Sys.Syslog sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/ceph/log` | Read ceph log | Sys.Syslog sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/ceph/mds` | MDS directory index. | Sys.Audit ou Datastore.Audit sur / | À faire |
 | POST | `/nodes/{node}/ceph/mds/{name}` | Create Ceph Metadata Server (MDS) | Sys.Modify sur / | À faire |
 | DELETE | `/nodes/{node}/ceph/mds/{name}` | Destroy Ceph Metadata Server | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/mgr` | MGR directory index. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/mgr` | MGR directory index. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | POST | `/nodes/{node}/ceph/mgr/{id}` | Create Ceph Manager | Sys.Modify sur / | À faire |
 | DELETE | `/nodes/{node}/ceph/mgr/{id}` | Destroy Ceph Manager. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/mon` | Get Ceph monitor list. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/mon` | Get Ceph monitor list. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | POST | `/nodes/{node}/ceph/mon/{monid}` | Create a Ceph Monitor. Also auto-creates a Manager for the first monitor. | Sys.Modify sur / | À faire |
 | DELETE | `/nodes/{node}/ceph/mon/{monid}` | Destroy a Ceph Monitor. Refuses to remove the last monitor of the cluster. Does not destroy any Manager on the same node; use /nodes/{node}/ceph/mgr/{id} for that. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/osd` | Get Ceph osd list/tree. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/osd` | Get Ceph osd list/tree. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | POST | `/nodes/{node}/ceph/osd` | Create OSD | non précisée | À faire |
 | GET | `/nodes/{node}/ceph/osd/{osdid}` | OSD index. | tout utilisateur connecté | Hors périmètre |
 | DELETE | `/nodes/{node}/ceph/osd/{osdid}` | Destroy OSD | non précisée | À faire |
-| POST | `/nodes/{node}/ceph/osd/{osdid}/in` | ceph osd in | Sys.Modify sur / | À faire |
+| POST | `/nodes/{node}/ceph/osd/{osdid}/in` | ceph osd in | Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/ceph/osd/{osdid}/lv-info` | Get OSD volume details | Sys.Audit sur / | À faire |
 | GET | `/nodes/{node}/ceph/osd/{osdid}/metadata` | Get OSD details | Sys.Audit sur / | À faire |
-| POST | `/nodes/{node}/ceph/osd/{osdid}/out` | ceph osd out | Sys.Modify sur / | À faire |
+| POST | `/nodes/{node}/ceph/osd/{osdid}/out` | ceph osd out | Sys.Modify sur / | Fait |
 | POST | `/nodes/{node}/ceph/osd/{osdid}/scrub` | Instruct the OSD to scrub. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/pool` | List all pools and their settings (which are settable by the POST/PUT endpoints). | Sys.Audit ou Datastore.Audit sur / | À faire |
-| POST | `/nodes/{node}/ceph/pool` | Create Ceph pool | Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/ceph/pool` | List all pools and their settings (which are settable by the POST/PUT endpoints). | Sys.Audit ou Datastore.Audit sur / | Fait |
+| POST | `/nodes/{node}/ceph/pool` | Create Ceph pool | Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/ceph/pool/{name}` | Pool index. | Sys.Audit ou Datastore.Audit sur / | Hors périmètre |
 | PUT | `/nodes/{node}/ceph/pool/{name}` | Change POOL settings | Sys.Modify sur / | À faire |
-| DELETE | `/nodes/{node}/ceph/pool/{name}` | Destroy pool | Sys.Modify sur / | À faire |
+| DELETE | `/nodes/{node}/ceph/pool/{name}` | Destroy pool | Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/ceph/pool/{name}/status` | Show the current pool status. | Sys.Audit ou Datastore.Audit sur / | À faire |
 | GET | `/nodes/{node}/ceph/releases` | List all known Ceph releases, marking which ones can be installed on this node. | Sys.Audit ou Datastore.Audit sur / | À faire |
 | POST | `/nodes/{node}/ceph/restart` | Restart ceph services. | Sys.Modify sur / | À faire |
 | POST | `/nodes/{node}/ceph/restart-bulk` | Rolling restart of all Ceph OSDs on this node. Each OSD is restarted only after Ceph reports the previous one is back up and the next one is safe to stop. For non-OSD Ceph daemons, use the cluster-wide endpoint at /clus… | Sys.Modify sur / | À faire |
 | GET | `/nodes/{node}/ceph/rules` | List ceph rules. | Sys.Audit ou Datastore.Audit sur / | À faire |
 | POST | `/nodes/{node}/ceph/start` | Start ceph services. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/ceph/status` | Get the Ceph cluster status (raw 'ceph status' output). The response is cluster-wide and identical to /cluster/ceph/status; this node-level alias exists for operator convenience. | Sys.Audit ou Datastore.Audit sur / | À faire |
+| GET | `/nodes/{node}/ceph/status` | Get the Ceph cluster status (raw 'ceph status' output). The response is cluster-wide and identical to /cluster/ceph/status; this node-level alias exists for operator convenience. | Sys.Audit ou Datastore.Audit sur / | Fait |
 | POST | `/nodes/{node}/ceph/stop` | Stop ceph services. | Sys.Modify sur / | À faire |
 
 ### Nœud : certificates
@@ -548,23 +548,23 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/disks` | Node index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/disks/directory` | PVE Managed Directory storages. | Sys.Audit sur / | À faire |
-| POST | `/nodes/{node}/disks/directory` | Create a Filesystem on an unused disk. Will be mounted under '/mnt/pve/NAME'. | Sys.Modify sur / | À faire |
-| DELETE | `/nodes/{node}/disks/directory/{name}` | Unmounts the storage and removes the mount unit. | Sys.Modify sur / | À faire |
-| POST | `/nodes/{node}/disks/initgpt` | Initialize Disk with GPT | Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/disks/directory` | PVE Managed Directory storages. | Sys.Audit sur / | Fait |
+| POST | `/nodes/{node}/disks/directory` | Create a Filesystem on an unused disk. Will be mounted under '/mnt/pve/NAME'. | Sys.Modify sur / | Fait |
+| DELETE | `/nodes/{node}/disks/directory/{name}` | Unmounts the storage and removes the mount unit. | Sys.Modify sur / | Fait |
+| POST | `/nodes/{node}/disks/initgpt` | Initialize Disk with GPT | Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/disks/list` | List local disks. | Sys.Audit sur / ou Sys.Audit sur /nodes/{node} | Fait |
-| GET | `/nodes/{node}/disks/lvm` | List LVM Volume Groups | Sys.Audit sur / | À faire |
-| POST | `/nodes/{node}/disks/lvm` | Create an LVM Volume Group | Sys.Modify sur / | À faire |
-| DELETE | `/nodes/{node}/disks/lvm/{name}` | Remove an LVM Volume Group. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/disks/lvmthin` | List LVM thinpools | Sys.Audit sur / | À faire |
-| POST | `/nodes/{node}/disks/lvmthin` | Create an LVM thinpool | Sys.Modify sur / | À faire |
-| DELETE | `/nodes/{node}/disks/lvmthin/{name}` | Remove an LVM thin pool. | Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/disks/lvm` | List LVM Volume Groups | Sys.Audit sur / | Fait |
+| POST | `/nodes/{node}/disks/lvm` | Create an LVM Volume Group | Sys.Modify sur / | Fait |
+| DELETE | `/nodes/{node}/disks/lvm/{name}` | Remove an LVM Volume Group. | Sys.Modify sur / | Fait |
+| GET | `/nodes/{node}/disks/lvmthin` | List LVM thinpools | Sys.Audit sur / | Fait |
+| POST | `/nodes/{node}/disks/lvmthin` | Create an LVM thinpool | Sys.Modify sur / | Fait |
+| DELETE | `/nodes/{node}/disks/lvmthin/{name}` | Remove an LVM thin pool. | Sys.Modify sur / | Fait |
 | GET | `/nodes/{node}/disks/smart` | Get SMART Health of a disk. | Sys.Audit sur / | Fait |
-| PUT | `/nodes/{node}/disks/wipedisk` | Wipe a disk or partition. | non précisée | À faire |
+| PUT | `/nodes/{node}/disks/wipedisk` | Wipe a disk or partition. | non précisée | Fait |
 | GET | `/nodes/{node}/disks/zfs` | List Zpools. | Sys.Audit sur / | Fait |
-| POST | `/nodes/{node}/disks/zfs` | Create a ZFS pool. | Sys.Modify sur / | À faire |
-| GET | `/nodes/{node}/disks/zfs/{name}` | Get details about a zpool. | Sys.Audit sur / | À faire |
-| DELETE | `/nodes/{node}/disks/zfs/{name}` | Destroy a ZFS pool. | Sys.Modify sur / | À faire |
+| POST | `/nodes/{node}/disks/zfs` | Create a ZFS pool. | Sys.Modify sur / | Fait |
+| GET | `/nodes/{node}/disks/zfs/{name}` | Get details about a zpool. | Sys.Audit sur / | Fait |
+| DELETE | `/nodes/{node}/disks/zfs/{name}` | Destroy a ZFS pool. | Sys.Modify sur / | Fait |
 
 ### Nœud : dns
 

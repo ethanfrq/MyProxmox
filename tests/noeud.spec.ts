@@ -137,3 +137,57 @@ test("mises à jour : rafraîchir, changements, dépôt no-subscription, mise à
   await expect(page.locator(".xterm-rows")).toContainText("Bienvenue");
   expect(errors).toEqual([]);
 });
+
+test("disques : SMART, effacer, assistant ZFS miroir, LVM-thin", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "disques", "pve2");
+  await page.locator("tr", { hasText: "/dev/sdb" }).getByRole("button", { name: "SMART" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Reallocated_Sector_Ct");
+  await page.getByRole("dialog").getByRole("button", { name: "Fermer" }).click();
+  // Libère /dev/sda et /dev/sdb (pool tank) en les effaçant
+  for (const dev of ["/dev/sda", "/dev/sdb"]) {
+    await page.locator("tr", { hasText: dev }).getByRole("button", { name: "Effacer" }).click();
+    await page.getByRole("dialog").getByRole("textbox").fill(dev);
+    await page.getByRole("dialog").getByRole("button", { name: "Effacer le disque" }).click();
+    await expect(page.getByText(`Effacement de ${dev} : terminé`)).toBeVisible();
+  }
+  await page.getByRole("tab", { name: "ZFS" }).click();
+  await page.getByRole("button", { name: "Créer un pool" }).click();
+  const dlg = page.getByRole("dialog");
+  await dlg.getByLabel("Nom du pool").fill(`data${Date.now() % 100}`);
+  await dlg.getByText("Miroir (RAID 1)").click();
+  await dlg.getByRole("button", { name: "Continuer" }).click();
+  await dlg.getByText("/dev/sdc", { exact: true }).click();
+  await dlg.getByRole("button", { name: "Continuer" }).click();
+  await expect(dlg.getByText("demande au moins 2 disque(s)")).toBeVisible();
+  await dlg.getByText("/dev/sdd", { exact: true }).click();
+  await dlg.getByRole("button", { name: "Continuer" }).click();
+  await dlg.getByRole("button", { name: "Continuer" }).click();
+  await expect(dlg).toContainText("Capacité utile estimée");
+  await dlg.getByRole("button", { name: "Créer le pool" }).click();
+  await expect(page.locator("main table")).toContainText("ONLINE");
+  await page.getByRole("tab", { name: "LVM-thin" }).click();
+  await page.getByRole("button", { name: "Créer", exact: true }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(`thin${Date.now() % 100}`);
+  await page.getByRole("dialog").getByRole("button", { name: "Créer" }).click();
+  await expect(page.locator("main table tbody tr")).toHaveCount(2);
+  expect(errors).toEqual([]);
+});
+
+test("Ceph : absent sur pve, présent sur pve2", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "ceph", "pve");
+  await expect(page.getByText("Ceph n'est pas installé sur ce nœud.")).toBeVisible();
+  await open(page, "ceph", "pve2");
+  await expect(page.locator("main")).toContainText("Gestionnaire actif");
+  await page.getByRole("tab", { name: "OSD" }).click();
+  await expect(page.locator("main table")).toContainText("osd.1");
+  await page.getByRole("tab", { name: "Pools" }).click();
+  await page.getByRole("button", { name: "Créer un pool" }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(`p${Date.now() % 1000}`);
+  await page.getByRole("dialog").getByRole("button", { name: "Créer" }).click();
+  await expect(page.locator("main table tbody tr")).toHaveCount(3);
+  expect(errors.filter((e) => !e.includes("500"))).toEqual([]);
+});

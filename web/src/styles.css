@@ -631,3 +631,8 @@ a.user-chip:hover { color: var(--panel); }
 .diff { background: var(--code-bg); color: var(--line); padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; white-space: pre; overflow-x: auto; margin: 0; max-height: 380px; }
 .diff .add { color: var(--diff-add); background: var(--diff-add-bg); }
 .diff .del { color: var(--diff-del); background: var(--diff-del-bg); }
+/* Les fenêtres hautes défilent au lieu de sortir de l'écran */
+.modal-bg { overflow-y: auto; place-items: start center; }
+.modal { margin: 6vh 0; }
+.modal .wizard { min-height: 0; border: 0; }
+.diff .hunk { color: var(--muted); }

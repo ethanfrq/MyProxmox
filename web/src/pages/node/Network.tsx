@@ -49,6 +49,25 @@ function toParams(kind: string, v: Values, before?: Values) {
   return body;
 }
 
+/** Ne garde que les lignes modifiées et 3 lignes de contexte autour, comme un diff unifié. */
+function compactDiff(text: string, ctx = 3) {
+  const lines = text.split("\n");
+  const changed = (l: string) => (l.startsWith("+") && !l.startsWith("+++")) || (l.startsWith("-") && !l.startsWith("---"));
+  const keep = new Set<number>();
+  lines.forEach((l, i) => {
+    if (i < 2 || changed(l)) for (let k = Math.max(0, i - ctx); k <= Math.min(lines.length - 1, i + ctx); k++) keep.add(k);
+  });
+  const out: string[] = [];
+  let last = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (!keep.has(i)) continue;
+    if (last >= 0 && i > last + 1) out.push("@@ … @@");
+    out.push(lines[i]);
+    last = i;
+  }
+  return out;
+}
+
 export function NodeNetwork({ node }: { node: string }) {
   const { toast, watch } = useToast();
   const { allowed } = usePermission(`/nodes/${node}`, "Sys.Modify");
@@ -72,7 +91,7 @@ export function NodeNetwork({ node }: { node: string }) {
         }>
           <div className="stack">
             <Notice kind="warn">Rien n&apos;est encore appliqué. Voici la différence entre le fichier actuel et le nouveau <code>/etc/network/interfaces</code>. Relis-la : une erreur peut couper l&apos;accès au serveur.</Notice>
-            <pre className="diff">{changes.split("\n").map((l, i) => <span key={i} className={l.startsWith("+") && !l.startsWith("+++") ? "add" : l.startsWith("-") && !l.startsWith("---") ? "del" : ""}>{l}{"\n"}</span>)}</pre>
+            <pre className="diff">{compactDiff(changes).map((l, i) => <span key={i} className={l.startsWith("@@") ? "hunk" : l.startsWith("+") && !l.startsWith("+++") ? "add" : l.startsWith("-") && !l.startsWith("---") ? "del" : ""}>{l}{"\n"}</span>)}</pre>
           </div>
         </Panel>
       )}

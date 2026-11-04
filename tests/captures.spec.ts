@@ -32,3 +32,18 @@ test("captures de la fiche machine et de la création", async ({ page }) => {
   });
   await shot(page, "/machines", "machines");
 });
+
+test("captures du nœud", async ({ page }) => {
+  await loginProxmox(page);
+  await shot(page, "/serveur?node=pve&onglet=resume", "noeud-resume");
+  await shot(page, "/serveur?node=pve&onglet=disques", "serveur-disques");
+  await shot(page, "/serveur?node=pve&onglet=reseau", "noeud-reseau", async () => {
+    await page.getByRole("button", { name: "Créer" }).click();
+    await page.getByRole("menuitem", { name: "Pont Linux" }).click();
+    await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill("vmbr9");
+    await page.getByRole("dialog").getByLabel("Adresse IPv4").fill("172.16.9.1/24");
+    await page.getByRole("dialog").getByRole("button", { name: "Préparer le changement" }).click();
+    await expect(page.locator("pre.diff")).toBeVisible();
+  });
+  await shot(page, "/serveur?node=pve&onglet=journaux", "noeud-journal");
+});
