@@ -9,6 +9,8 @@ test.describe.serial("comptes MyProxmox", () => {
   test("l'admin ouvre l'inscription avec validation", async ({ page }) => {
     const errors = watchErrors(page);
     await loginProxmox(page);
+    // Repart d'une inscription fermée, quel que soit l'état laissé par un lancement précédent
+    expect((await page.request.put("/api/settings", { data: { registration: "off" } })).status()).toBe(200);
     await page.goto("/parametres/comptes");
     await expect(page.locator("main h1")).toHaveText("Comptes MyProxmox");
     await page.getByText("Avec validation", { exact: true }).click();
