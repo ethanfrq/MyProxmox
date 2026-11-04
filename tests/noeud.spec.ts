@@ -97,3 +97,43 @@ test("système : DNS, hosts, fuseau", async ({ page }) => {
   await expect(page.getByText("Fichier hosts enregistré")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("certificats : domaine ACME, commande, plugin DNS, certificat personnalisé", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "certificats", "pve2");
+  await page.getByRole("button", { name: "Ajouter un domaine" }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Domaine", exact: true }).fill("pve2.exemple.fr");
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("tr", { hasText: "pve2.exemple.fr" })).toContainText("HTTP");
+  await page.getByRole("button", { name: "Commander le certificat" }).click();
+  await expect(page.getByText("Commande du certificat : terminé")).toBeVisible();
+  await expect(page.locator("tr", { hasText: "pveproxy-ssl.pem" })).toContainText("R11");
+  await page.getByRole("tab", { name: "Comptes et plugins ACME" }).click();
+  await page.getByRole("button", { name: "Ajouter un plugin DNS" }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(`cf${Date.now() % 1000}`);
+  await page.getByRole("dialog").getByLabel("Identifiants de l'API").fill("CF_Token=abc");
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("Plugin enregistré")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("mises à jour : rafraîchir, changements, dépôt no-subscription, mise à niveau dans le shell", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "maj");
+  await page.getByRole("button", { name: "Rafraîchir la liste" }).click();
+  await expect(page.getByText("Recherche de mises à jour : terminé")).toBeVisible();
+  await page.locator("tr", { hasText: "pve-manager" }).getByRole("button", { name: "Changements" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Proxmox Support Team");
+  await page.getByRole("dialog").getByRole("button", { name: "Fermer" }).click();
+  await page.getByRole("tab", { name: "Dépôts" }).click();
+  await page.getByRole("button", { name: "Ajouter No-Subscription" }).click();
+  await expect(page.getByRole("button", { name: "No-Subscription : présent" })).toBeVisible();
+  await page.getByRole("switch", { name: /enterprise.proxmox.com/ }).click();
+  await page.getByRole("tab", { name: "Paquets" }).click();
+  await page.getByRole("button", { name: "Mettre à niveau dans le shell" }).click();
+  await expect(page).toHaveURL(/onglet=shell/);
+  await expect(page.locator(".xterm-rows")).toContainText("Bienvenue");
+  expect(errors).toEqual([]);
+});

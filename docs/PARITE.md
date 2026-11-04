@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 22 | 169 | 12 | 3 (lecture sauvegardes), 6 |
+| [Datacenter](#datacenter) | 203 | 33 | 158 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 58 | 93 | 22 | 3 (lecture), 5 |
+| [Nœud](#nœud) | 173 | 71 | 80 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **210** | **409** | **61** | |
+| **Total** | **680** | **234** | **385** | **61** | |
 
 ## Phases
 
@@ -49,27 +49,27 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 22 faits, 169 à faire, 12 hors périmètre.
+203 points d'entrée : 33 faits, 158 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/acme` | ACMEAccount index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/cluster/acme/account` | ACMEAccount index. | tout utilisateur connecté | À faire |
-| POST | `/cluster/acme/account` | Register a new ACME account with CA. | non précisée | À faire |
-| GET | `/cluster/acme/account/{name}` | Return existing ACME account information. | non précisée | À faire |
+| GET | `/cluster/acme/account` | ACMEAccount index. | tout utilisateur connecté | Fait |
+| POST | `/cluster/acme/account` | Register a new ACME account with CA. | non précisée | Fait |
+| GET | `/cluster/acme/account/{name}` | Return existing ACME account information. | non précisée | Fait |
 | PUT | `/cluster/acme/account/{name}` | Update existing ACME account information with CA. Note: not specifying any new account information triggers a refresh. | non précisée | À faire |
-| DELETE | `/cluster/acme/account/{name}` | Deactivate existing ACME account at CA. | non précisée | À faire |
-| GET | `/cluster/acme/challenge-schema` | Get schema of ACME challenge types. | tout utilisateur connecté | À faire |
-| GET | `/cluster/acme/directories` | Get named known ACME directory endpoints. | tout utilisateur connecté | À faire |
+| DELETE | `/cluster/acme/account/{name}` | Deactivate existing ACME account at CA. | non précisée | Fait |
+| GET | `/cluster/acme/challenge-schema` | Get schema of ACME challenge types. | tout utilisateur connecté | Fait |
+| GET | `/cluster/acme/directories` | Get named known ACME directory endpoints. | tout utilisateur connecté | Fait |
 | GET | `/cluster/acme/meta` | Retrieve ACME Directory Meta Information | Sys.Audit sur /nodes/{node} | À faire |
-| GET | `/cluster/acme/plugins` | ACME plugin index. | Sys.Modify sur / | À faire |
-| POST | `/cluster/acme/plugins` | Add ACME plugin configuration. | Sys.Modify sur / | À faire |
+| GET | `/cluster/acme/plugins` | ACME plugin index. | Sys.Modify sur / | Fait |
+| POST | `/cluster/acme/plugins` | Add ACME plugin configuration. | Sys.Modify sur / | Fait |
 | GET | `/cluster/acme/plugins/{id}` | Get ACME plugin configuration. | Sys.Modify sur / | À faire |
-| PUT | `/cluster/acme/plugins/{id}` | Update ACME plugin configuration. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/acme/plugins/{id}` | Delete ACME plugin configuration. | Sys.Modify sur / | À faire |
-| GET | `/cluster/acme/tos` | Retrieve ACME TermsOfService URL from CA. Deprecated, please use /cluster/acme/meta. | tout utilisateur connecté | À faire |
+| PUT | `/cluster/acme/plugins/{id}` | Update ACME plugin configuration. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/acme/plugins/{id}` | Delete ACME plugin configuration. | Sys.Modify sur / | Fait |
+| GET | `/cluster/acme/tos` | Retrieve ACME TermsOfService URL from CA. Deprecated, please use /cluster/acme/meta. | tout utilisateur connecté | Fait |
 
 ### Datacenter : backup
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 58 faits, 93 à faire, 22 hors périmètre.
+173 points d'entrée : 71 faits, 80 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -456,13 +456,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/apt` | Directory index for apt (Advanced Package Tool). | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/apt/changelog` | Get package changelogs. | Sys.Modify sur /nodes/{node} | À faire |
-| GET | `/nodes/{node}/apt/repositories` | Get APT repository information. | Sys.Audit sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/apt/repositories` | Change the properties of a repository. Currently only allows enabling/disabling. | Sys.Modify sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/apt/repositories` | Add a standard repository to the configuration | Sys.Modify sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/apt/changelog` | Get package changelogs. | Sys.Modify sur /nodes/{node} | Fait |
+| GET | `/nodes/{node}/apt/repositories` | Get APT repository information. | Sys.Audit sur /nodes/{node} | Fait |
+| POST | `/nodes/{node}/apt/repositories` | Change the properties of a repository. Currently only allows enabling/disabling. | Sys.Modify sur /nodes/{node} | Fait |
+| PUT | `/nodes/{node}/apt/repositories` | Add a standard repository to the configuration | Sys.Modify sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/apt/update` | List available updates. | Sys.Modify sur /nodes/{node} | Fait |
-| POST | `/nodes/{node}/apt/update` | This is used to resynchronize the package index files from their sources (apt-get update). | Sys.Modify sur /nodes/{node} | À faire |
-| GET | `/nodes/{node}/apt/versions` | Get package information for important Proxmox packages. | Sys.Audit sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/apt/update` | This is used to resynchronize the package index files from their sources (apt-get update). | Sys.Modify sur /nodes/{node} | Fait |
+| GET | `/nodes/{node}/apt/versions` | Get package information for important Proxmox packages. | Sys.Audit sur /nodes/{node} | Fait |
 
 ### Nœud : capabilities
 
@@ -529,19 +529,19 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/nodes/{node}/certificates` | Node index. | tout utilisateur connecté | Hors périmètre |
 | GET | `/nodes/{node}/certificates/acme` | ACME index. | tout utilisateur connecté | Hors périmètre |
-| POST | `/nodes/{node}/certificates/acme/certificate` | Order a new certificate from ACME-compatible CA. | Sys.Modify sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/certificates/acme/certificate` | Renew existing certificate from CA. | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/certificates/acme/certificate` | Revoke existing certificate from CA. | Sys.Modify sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/certificates/custom` | Upload or update custom certificate chain and key. | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/certificates/custom` | DELETE custom certificate chain and key. | Sys.Modify sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/certificates/acme/certificate` | Order a new certificate from ACME-compatible CA. | Sys.Modify sur /nodes/{node} | Fait |
+| PUT | `/nodes/{node}/certificates/acme/certificate` | Renew existing certificate from CA. | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/certificates/acme/certificate` | Revoke existing certificate from CA. | Sys.Modify sur /nodes/{node} | Fait |
+| POST | `/nodes/{node}/certificates/custom` | Upload or update custom certificate chain and key. | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/certificates/custom` | DELETE custom certificate chain and key. | Sys.Modify sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/certificates/info` | Get information about node's certificates. | tout utilisateur connecté | Fait |
 
 ### Nœud : config
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/config` | Get node configuration options. | Sys.Audit sur / | À faire |
-| PUT | `/nodes/{node}/config` | Set node configuration options. | Sys.Modify sur / | À faire |
+| GET | `/nodes/{node}/config` | Get node configuration options. | Sys.Audit sur / | Fait |
+| PUT | `/nodes/{node}/config` | Set node configuration options. | Sys.Modify sur / | Fait |
 
 ### Nœud : disks
 
