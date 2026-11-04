@@ -27,7 +27,7 @@ export function Wizard({
   onCancel?: () => void;
   finishLabel?: string;
   /** Lignes ajoutées au récapitulatif (aperçu de commande, avertissements...). */
-  summaryExtra?: (values: Values) => ReactNode;
+  summaryExtra?: (values: Values, set: (name: string, v: any) => void) => ReactNode;
   /** Texte en bas de la colonne des étapes. */
   aside?: ReactNode;
 }) {
@@ -122,7 +122,7 @@ export function Wizard({
                   </div>
                 );
               })}
-              {summaryExtra?.(values)}
+              {summaryExtra?.(values, set)}
               {error && <div className="notice error">{error}</div>}
             </div>
           </>

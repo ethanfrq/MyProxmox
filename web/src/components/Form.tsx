@@ -27,8 +27,10 @@ export interface FieldDef {
   step?: number;
   /** Liste fixe pour "select". */
   options?: Option[];
-  /** Liste chargée depuis l'API pour "api-select". */
-  load?: () => Promise<Option[]>;
+  /** Liste chargée depuis l'API pour "api-select". Reçoit les valeurs du formulaire. */
+  load?: (values: Values) => Promise<Option[]>;
+  /** Champs dont dépend la liste : elle est rechargée quand ils changent. */
+  loadDeps?: string[];
   /** Permet de laisser la liste vide ("select" et "api-select"). */
   allowEmpty?: string;
   rows?: number;
@@ -118,23 +120,28 @@ export function cleanValues(fields: FieldDef[], values: Values): Values {
 }
 
 // ── Champs ────────────────────────────────────────────────────────
-function ApiSelect({ f, value, onChange, id }: { f: FieldDef; value: any; onChange: (v: any) => void; id: string }) {
+function ApiSelect({ f, value, onChange, id, values }: { f: FieldDef; value: any; onChange: (v: any) => void; id: string; values: Values }) {
   const [opts, setOpts] = useState<Option[] | null>(null);
   const [err, setErr] = useState("");
+  const depKey = JSON.stringify((f.loadDeps ?? []).map((d) => values[d]));
   useEffect(() => {
     let live = true;
-    f.load?.().then((o) => live && setOpts(o)).catch((e) => live && setErr((e as Error).message));
+    setOpts(null);
+    setErr("");
+    f.load?.(values).then((o) => live && setOpts(o)).catch((e) => live && setErr((e as Error).message));
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.name]);
+  }, [f.name, depKey]);
   useEffect(() => {
-    // Choisit la première option si rien n'est sélectionné et que le vide n'est pas permis
-    if (opts?.length && isEmpty(value) && f.allowEmpty === undefined) onChange(opts[0].value);
+    // Choisit la première option si rien n'est sélectionné (ou si l'ancienne valeur n'existe plus)
+    if (!opts?.length || f.allowEmpty !== undefined && isEmpty(value)) return;
+    if (isEmpty(value) || !opts.some((o) => o.value === String(value))) onChange(opts[0].value);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts]);
   if (err) return <div className="notice error">Liste indisponible : {err}</div>;
+  if (opts && !opts.length && f.allowEmpty === undefined) return <div className="notice warn">Rien à choisir ici pour l&apos;instant.</div>;
   return (
     <select id={id} className="input select" value={value ?? ""} disabled={!opts || f.readOnly} onChange={(e) => onChange(e.target.value)}>
       {!opts && <option>Chargement…</option>}
@@ -177,7 +184,7 @@ function Tags({ value, onChange, id, placeholder }: { value: any; onChange: (v: 
   );
 }
 
-export function FieldInput({ f, value, onChange }: { f: FieldDef; value: any; onChange: (v: any) => void }) {
+export function FieldInput({ f, value, onChange, values = {} }: { f: FieldDef; value: any; onChange: (v: any) => void; values?: Values }) {
   const id = `f-${f.name}`;
   const common = { id, readOnly: f.readOnly, placeholder: f.placeholder };
   switch (f.type) {
@@ -196,7 +203,7 @@ export function FieldInput({ f, value, onChange }: { f: FieldDef; value: any; on
         </select>
       );
     case "api-select":
-      return <ApiSelect f={f} value={value} onChange={onChange} id={id} />;
+      return <ApiSelect f={f} value={value} onChange={onChange} id={id} values={values} />;
     case "tags":
       return <Tags value={value} onChange={onChange} id={id} placeholder={f.placeholder} />;
     case "code":
@@ -236,7 +243,7 @@ export function FormFields({ fields, values, onChange, errors = {} }: { fields: 
       ) : (
         <>
           <label htmlFor={`f-${f.name}`}>{f.label}{f.required && <span className="req" aria-hidden> *</span>}</label>
-          <FieldInput f={f} value={values[f.name]} onChange={(v) => onChange(f.name, v)} />
+          <FieldInput f={f} value={values[f.name]} values={values} onChange={(v) => onChange(f.name, v)} />
         </>
       )}
       {errors[f.name] ? <div className="help error" role="alert">{errors[f.name]}</div> : f.help && <div className="help">{f.help}</div>}

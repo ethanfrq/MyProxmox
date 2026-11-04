@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Confirm, MiniMeter, Notice, PageHead, Panel, Status, TypeTag, useToast } from "../components/ui";
+import { Button, Confirm, MiniMeter, Modal, Notice, PageHead, Panel, Status, TypeTag, useToast } from "../components/ui";
 import { DataTable, type Column } from "../components/DataTable";
+import { Form, type FieldDef, type Values } from "../components/Form";
 import { GuestActions } from "../components/GuestActions";
 import { I } from "../components/icons";
 import { tagList } from "../components/Tree";
@@ -15,11 +16,30 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "Toutes" }, { id: "running", label: "En marche" }, { id: "stopped", label: "Arrêtées" },
   { id: "qemu", label: "VM" }, { id: "lxc", label: "Conteneurs" },
 ];
-type Bulk = "start" | "shutdown" | "snapshot";
-const BULK: Record<Bulk, { title: string; label: string; priv: string }> = {
-  start: { title: "Démarrer la sélection ?", label: "Démarrer", priv: "VM.PowerMgmt" },
-  shutdown: { title: "Éteindre la sélection ?", label: "Éteindre", priv: "VM.PowerMgmt" },
-  snapshot: { title: "Snapshot de la sélection ?", label: "Prendre les snapshots", priv: "VM.Snapshot" },
+type Bulk = "start" | "shutdown" | "reboot" | "snapshot" | "backup" | "migrate" | "tags";
+const BULK: Record<Bulk, { button: string; title: string; label: string; priv: string }> = {
+  start: { button: "Démarrer", title: "Démarrer la sélection ?", label: "Démarrer", priv: "VM.PowerMgmt" },
+  shutdown: { button: "Éteindre", title: "Éteindre la sélection ?", label: "Éteindre", priv: "VM.PowerMgmt" },
+  reboot: { button: "Redémarrer", title: "Redémarrer la sélection ?", label: "Redémarrer", priv: "VM.PowerMgmt" },
+  snapshot: { button: "Snapshot", title: "Snapshot de la sélection ?", label: "Prendre les snapshots", priv: "VM.Snapshot" },
+  backup: { button: "Sauvegarder", title: "Sauvegarder la sélection", label: "Lancer les sauvegardes", priv: "VM.Backup" },
+  migrate: { button: "Migrer", title: "Migrer la sélection", label: "Migrer", priv: "VM.Migrate" },
+  tags: { button: "Tags", title: "Tags de la sélection", label: "Appliquer", priv: "VM.Config.Options" },
+};
+const FORMS: Partial<Record<Bulk, FieldDef[]>> = {
+  backup: [
+    { name: "storage", label: "Stockage", type: "api-select", required: true, load: async () => (await pve.get<any[]>("/cluster/resources", { type: "storage" })).filter((s) => String(s.content).includes("backup") && s.status === "available").filter((s, i, a) => a.findIndex((x) => x.storage === s.storage) === i).map((s) => ({ value: s.storage, label: s.storage })) },
+    { name: "mode", label: "Mode", type: "select", default: "snapshot", options: [{ value: "snapshot", label: "Snapshot (sans interruption)" }, { value: "suspend", label: "Suspension" }, { value: "stop", label: "Arrêt" }] },
+    { name: "compress", label: "Compression", type: "select", default: "zstd", options: [{ value: "zstd", label: "ZSTD" }, { value: "gzip", label: "GZIP" }, { value: "0", label: "Aucune" }] },
+  ],
+  migrate: [
+    { name: "target", label: "Nœud cible", type: "api-select", required: true, load: async () => (await pve.get<any[]>("/nodes")).filter((n) => n.status === "online").map((n) => ({ value: n.node, label: n.node })) },
+    { name: "online", label: "À chaud pour les VM allumées, redémarrage pour les conteneurs allumés", type: "checkbox", default: true },
+  ],
+  tags: [
+    { name: "op", label: "Action", type: "select", default: "add", options: [{ value: "add", label: "Ajouter le tag" }, { value: "remove", label: "Retirer le tag" }] },
+    { name: "tag", label: "Tag", required: true, validate: (x) => (/^[a-z0-9_][a-z0-9_.+-]*$/i.test(String(x)) ? null : "Lettres, chiffres, _ . + et -.") },
+  ],
 };
 
 export function Machines() {
@@ -49,23 +69,41 @@ export function Machines() {
     return true;
   });
 
-  async function runBulk(kind: Bulk, selected: any[]) {
+  async function runBulk(kind: Bulk, selected: any[], v: Values = {}) {
     const name = `lot-${new Date().toISOString().slice(0, 16).replace(/\D/g, "")}`;
-    const targets = selected.filter((g) => (kind === "start" ? g.status !== "running" : kind === "shutdown" ? g.status === "running" : true));
+    const targets = selected.filter((g) => (kind === "start" ? g.status !== "running" : kind === "shutdown" || kind === "reboot" ? g.status === "running" : kind === "migrate" ? g.node !== v.target : true));
     let ok = 0;
-    for (const g of targets) {
-      try {
-        const base = `/nodes/${g.node}/${g.type}/${g.vmid}`;
-        const upid = kind === "snapshot"
-          ? await pve.post(`${base}/snapshot`, { snapname: name, description: "Snapshot groupé depuis MyProxmox" })
-          : await pve.post(`${base}/status/${kind}`);
-        watch(g.node, upid, `${g.name}`);
-        ok++;
-      } catch (e) {
-        toast(`${g.name} : ${(e as Error).message}. Vérifie son état puis réessaie.`, "error");
+    if (kind === "backup") {
+      // Une seule tâche vzdump par nœud, avec la liste des machines
+      const byNode = new Map<string, any[]>();
+      for (const g of targets) byNode.set(g.node, [...(byNode.get(g.node) ?? []), g]);
+      for (const [node, gs] of byNode) {
+        try {
+          const upid = await pve.post<string>(`/nodes/${node}/vzdump`, { vmid: gs.map((g) => g.vmid).join(","), storage: v.storage, mode: v.mode, compress: v.compress });
+          watch(node, upid, `Sauvegarde de ${gs.length} machine(s) sur ${node}`);
+          ok += gs.length;
+        } catch (e) { toast(`${node} : ${(e as Error).message}`, "error"); }
+      }
+    } else {
+      for (const g of targets) {
+        try {
+          const base = `/nodes/${g.node}/${g.type}/${g.vmid}`;
+          let upid: unknown = null;
+          if (kind === "snapshot") upid = await pve.post(`${base}/snapshot`, { snapname: name, description: "Snapshot groupé depuis MyProxmox" });
+          else if (kind === "migrate") upid = await pve.post(`${base}/migrate`, { target: v.target, online: g.type === "qemu" && g.status === "running" && v.online ? 1 : undefined, restart: g.type === "lxc" && g.status === "running" && v.online ? 1 : undefined });
+          else if (kind === "tags") {
+            const cur = tagList(g.tags);
+            const next = v.op === "add" ? [...new Set([...cur, String(v.tag)])] : cur.filter((t) => t !== v.tag);
+            await pve.put(`${base}/config`, next.length ? { tags: next.join(";") } : { delete: "tags" });
+          } else upid = await pve.post(`${base}/status/${kind}`);
+          if (typeof upid === "string") watch(g.node, upid, `${g.name}`);
+          ok++;
+        } catch (e) {
+          toast(`${g.name} : ${(e as Error).message}. Vérifie son état puis réessaie.`, "error");
+        }
       }
     }
-    toast(`${ok} action(s) lancée(s)`, "ok");
+    toast(`${ok} action(s) lancée(s)${targets.length < selected.length ? ` (${selected.length - targets.length} déjà dans l'état voulu)` : ""}`, "ok");
     setTimeout(res.refresh, 1500);
   }
 
@@ -149,8 +187,8 @@ export function Machines() {
                 const ok = can(selected, BULK[k].priv);
                 return (
                   <span key={k} title={ok ? undefined : `Il te manque le droit ${BULK[k].priv} sur au moins une machine`}>
-                    <Button size="sm" disabled={!ok} icon={k === "start" ? <I.play /> : k === "shutdown" ? <I.power /> : <I.camera />} onClick={() => setBulk({ kind: k, list: selected, clear })}>
-                      {k === "start" ? "Démarrer" : k === "shutdown" ? "Éteindre" : "Snapshot"}
+                    <Button size="sm" disabled={!ok} icon={k === "start" ? <I.play /> : k === "shutdown" ? <I.power /> : k === "reboot" ? <I.reboot /> : k === "snapshot" ? <I.camera /> : k === "backup" ? <I.download /> : undefined} onClick={() => setBulk({ kind: k, list: selected, clear })}>
+                      {BULK[k].button}
                     </Button>
                   </span>
                 );
@@ -160,7 +198,7 @@ export function Machines() {
         />
       </Panel>
 
-      {bulk && (
+      {bulk && !FORMS[bulk.kind] && (
         <Confirm
           title={BULK[bulk.kind].title}
           confirmLabel={BULK[bulk.kind].label}
@@ -172,6 +210,23 @@ export function Machines() {
         >
           <p>{bulk.list.map((g) => g.name).join(", ")}</p>
         </Confirm>
+      )}
+      {bulk && FORMS[bulk.kind] && (
+        <Modal title={BULK[bulk.kind].title} onClose={() => setBulk(null)}>
+          <div className="stack">
+            <p className="small muted" style={{ margin: 0 }}>{bulk.list.map((g) => g.name).join(", ")}</p>
+            <Form
+              fields={FORMS[bulk.kind]!}
+              submitLabel={BULK[bulk.kind].label}
+              onCancel={() => setBulk(null)}
+              onSubmit={async (_c, v) => {
+                await runBulk(bulk.kind, bulk.list, v);
+                bulk.clear();
+                setBulk(null);
+              }}
+            />
+          </div>
+        </Modal>
       )}
     </>
   );

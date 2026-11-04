@@ -44,7 +44,7 @@ const HORS_PERIMETRE = {
 const ALIAS_VALUES = {
   type: ["qemu", "lxc"],
   "g.type": ["qemu", "lxc"],
-  kind: ["qemu", "lxc", "start", "shutdown"],
+  kind: ["qemu", "lxc", "start", "shutdown", "reboot", "stop"],
   action: ["start", "shutdown", "reboot", "stop"],
   "r.type": ["qemu", "lxc"],
   "ctx.type": ["qemu", "lxc"],

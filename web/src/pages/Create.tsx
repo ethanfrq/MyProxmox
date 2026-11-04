@@ -3,32 +3,55 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button, Field, Notice, PageHead, Panel, Tabs, useToast } from "../components/ui";
 import { pve, usePoll } from "../lib/api";
 import { bytes } from "../../../shared/format";
+import { VmWizard, CtWizard } from "./create/Wizards";
+import { CloneDialog } from "./machine/Lifecycle";
 
-type Kind = "lxc" | "qemu";
+type Kind = "lxc" | "qemu" | "modele";
+type Mode = "assistant" | "simple";
+
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } },
+};
 
 export function Create() {
   const [kind, setKind] = useState<Kind>("lxc");
+  const [mode, setMode] = useState<Mode>((store.get("myproxmox-create-mode") as Mode) || "assistant");
   const nodes = usePoll(() => pve.get<any[]>("/nodes"), 0);
   const [node, setNode] = useState("");
   useEffect(() => { if (!node && nodes.data?.[0]) setNode(nodes.data[0].node); }, [nodes.data, node]);
+  useEffect(() => store.set("myproxmox-create-mode", mode), [mode]);
 
   return (
     <>
-      <PageHead title="Créer" sub="Une nouvelle machine virtuelle ou un conteneur" />
+      <PageHead
+        title="Créer"
+        sub="Une nouvelle machine virtuelle ou un conteneur"
+        actions={kind !== "modele" && (
+          <span className="btn-group" role="group" aria-label="Mode de création">
+            <Button size="sm" variant={mode === "assistant" ? "dark" : "default"} onClick={() => setMode("assistant")}>Assistant complet</Button>
+            <Button size="sm" variant={mode === "simple" ? "dark" : "default"} onClick={() => setMode("simple")}>Mode simple</Button>
+          </span>
+        )}
+      />
       <Tabs
         value={kind}
         onChange={setKind}
-        tabs={[{ id: "lxc", label: "Conteneur (LXC)" }, { id: "qemu", label: "Machine virtuelle" }]}
+        tabs={[{ id: "lxc", label: "Conteneur (LXC)" }, { id: "qemu", label: "Machine virtuelle" }, { id: "modele", label: "Depuis un modèle" }]}
       />
       <div style={{ marginBottom: 16 }}>
         <Notice>
           {kind === "lxc"
             ? "Un conteneur partage le noyau Linux du serveur : léger et rapide. Idéal pour un service (Pi-hole, Nextcloud, base de données…)."
-            : "Une VM émule un ordinateur complet : plus lourd, mais tu peux installer n'importe quel système (Windows, BSD, Linux)."}
+            : kind === "qemu"
+              ? "Une VM émule un ordinateur complet : plus lourd, mais tu peux installer n'importe quel système (Windows, BSD, Linux)."
+              : "Un modèle est une machine préparée une fois pour toutes. Un clone lié se crée en quelques secondes ; un clone complet est une copie indépendante."}
         </Notice>
       </div>
-      {node && (kind === "lxc" ? <CreateLxc node={node} /> : <CreateVm node={node} />)}
-      {nodes.data && nodes.data.length > 1 && (
+      {node && kind === "modele" && <FromTemplate />}
+      {node && kind !== "modele" && mode === "assistant" && (kind === "lxc" ? <CtWizard key="ct" defaultNode={node} /> : <VmWizard key="vm" defaultNode={node} />)}
+      {node && kind !== "modele" && mode === "simple" && (kind === "lxc" ? <CreateLxc node={node} /> : <CreateVm node={node} />)}
+      {mode === "simple" && kind !== "modele" && nodes.data && nodes.data.length > 1 && (
         <div style={{ marginTop: 16 }}>
           <Field label="Nœud">
             <select className="select input" style={{ maxWidth: 240 }} value={node} onChange={(e) => setNode(e.target.value)}>
@@ -235,6 +258,31 @@ function CreateVm({ node }: { node: string }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FromTemplate() {
+  const res = usePoll(() => pve.get<any[]>("/cluster/resources", { type: "vm" }), 0);
+  const [pick, setPick] = useState<any | null>(null);
+  const tpl = (res.data ?? []).filter((r) => r.template);
+  if (res.loading) return <div className="empty">Chargement…</div>;
+  if (!tpl.length) return <Notice>Aucun modèle pour l&apos;instant. Prépare une machine puis, dans sa fiche, choisis « Plus » puis « Convertir en modèle ».</Notice>;
+  return (
+    <div className="grid g3">
+      {tpl.map((t) => (
+        <button key={t.id} type="button" className="panel tpl-card" onClick={() => setPick(t)}>
+          <div className="row" style={{ justifyContent: "space-between" }}><strong>{t.name}</strong><span className="tag">{t.type === "qemu" ? "VM" : "CT"} {t.vmid}</span></div>
+          <div className="small muted" style={{ marginTop: 6 }}>{t.maxcpu} cœur(s) · {bytes(t.maxmem)} · disque {bytes(t.maxdisk)} · {t.node}</div>
+          <div className="small" style={{ marginTop: 10, color: "var(--orange)", fontWeight: 600 }}>Créer depuis ce modèle</div>
+        </button>
+      ))}
+      {pick && (
+        <CloneDialog
+          ctx={{ node: pick.node, type: pick.type, vmid: pick.vmid, base: `/nodes/${pick.node}/${pick.type}/${pick.vmid}`, name: pick.name, running: false, conf: { template: "1" }, refresh: res.refresh }}
+          onClose={() => setPick(null)}
+        />
+      )}
     </div>
   );
 }

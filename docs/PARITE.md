@@ -13,14 +13,14 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 6 | 185 | 12 | 3 (lecture sauvegardes), 6 |
-| [Cluster](#cluster) | 60 | 6 | 45 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 26 | 125 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 21 | 69 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 19 | 37 | 6 | 4 |
+| [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
+| [Nœud](#nœud) | 173 | 29 | 122 | 22 | 3 (lecture), 5 |
+| [VM QEMU](#vm-qemu) | 97 | 25 | 65 | 7 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 23 | 33 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 12 | 30 | 3 | 1 (permissions), 6 |
-| [Pools](#pools) | 7 | 0 | 7 | 0 | 6 |
-| **Total** | **680** | **97** | **522** | **61** | |
+| [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
+| **Total** | **680** | **112** | **507** | **61** | |
 
 ## Phases
 
@@ -316,7 +316,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Cluster
 
-60 points d'entrée : 6 faits, 45 à faire, 9 hors périmètre.
+60 points d'entrée : 9 faits, 42 à faire, 9 hors périmètre.
 
 ### Cluster : (racine)
 
@@ -410,10 +410,10 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/replication` | List replication jobs. | Will only return replication jobs for which the calling user has VM.Audit permission on /vms/<vmid>. | À faire |
-| POST | `/cluster/replication` | Create a new replication job | Requires the VM.Replicate permission on /vms/<vmid>. | À faire |
+| POST | `/cluster/replication` | Create a new replication job | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
 | GET | `/cluster/replication/{id}` | Read replication job configuration. | Requires the VM.Audit permission on /vms/<vmid>. | À faire |
-| PUT | `/cluster/replication/{id}` | Update replication job configuration. | Requires the VM.Replicate permission on /vms/<vmid>. | À faire |
-| DELETE | `/cluster/replication/{id}` | Mark replication job for removal. | Requires the VM.Replicate permission on /vms/<vmid>. | À faire |
+| PUT | `/cluster/replication/{id}` | Update replication job configuration. | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
+| DELETE | `/cluster/replication/{id}` | Mark replication job for removal. | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
 
 ### Cluster : resources
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 26 faits, 125 à faire, 22 hors périmètre.
+173 points d'entrée : 29 faits, 122 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -656,10 +656,10 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/replication` | List status of all replication jobs on this node. | Requires the VM.Audit permission on /vms/<vmid>. | À faire |
+| GET | `/nodes/{node}/replication` | List status of all replication jobs on this node. | Requires the VM.Audit permission on /vms/<vmid>. | Fait |
 | GET | `/nodes/{node}/replication/{id}` | Directory index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/replication/{id}/log` | Read replication job log. | Requires the VM.Audit permission on /vms/<vmid>, or 'Sys.Audit' on '/nodes/<node>' | À faire |
-| POST | `/nodes/{node}/replication/{id}/schedule_now` | Schedule replication job to start as soon as possible. | Requires the VM.Replicate permission on /vms/<vmid>. | À faire |
+| GET | `/nodes/{node}/replication/{id}/log` | Read replication job log. | Requires the VM.Audit permission on /vms/<vmid>, or 'Sys.Audit' on '/nodes/<node>' | Fait |
+| POST | `/nodes/{node}/replication/{id}/schedule_now` | Schedule replication job to start as soon as possible. | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
 | GET | `/nodes/{node}/replication/{id}/status` | Get replication job status. | Requires the VM.Audit permission on /vms/<vmid>. | À faire |
 
 ### Nœud : report
@@ -812,7 +812,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 21 faits, 69 à faire, 7 hors périmètre.
+97 points d'entrée : 25 faits, 65 à faire, 7 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -859,7 +859,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/clone` | Create a copy of virtual machine/template. | VM.Clone sur /vms/{vmid} et (VM.Allocate sur /vms/{newid} ou VM.Allocate sur /pool/{pool}) | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/clone` | Create a copy of virtual machine/template. | VM.Clone sur /vms/{vmid} et (VM.Allocate sur /vms/{newid} ou VM.Allocate sur /pool/{pool}) | Fait |
 
 ### VM QEMU : cloudinit
 
@@ -921,8 +921,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/qemu/{vmid}/migrate` | Get preconditions for migration. | VM.Migrate sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/migrate` | Migrate virtual machine. Creates a new migration task. | VM.Migrate sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/migrate` | Get preconditions for migration. | VM.Migrate sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/migrate` | Migrate virtual machine. Creates a new migration task. | VM.Migrate sur /vms/{vmid} | Fait |
 
 ### VM QEMU : monitor
 
@@ -1020,7 +1020,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/qemu/{vmid}/template` | Create a Template. | VM.Allocate sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/qemu/{vmid}/template` | Create a Template. | VM.Allocate sur /vms/{vmid} | Fait |
 
 ### VM QEMU : termproxy
 
@@ -1048,7 +1048,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Conteneur LXC
 
-62 points d'entrée : 19 faits, 37 à faire, 6 hors périmètre.
+62 points d'entrée : 23 faits, 33 à faire, 6 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1063,7 +1063,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/lxc/{vmid}/clone` | Create a container clone/copy | VM.Clone sur /vms/{vmid} et (VM.Allocate sur /vms/{newid} ou VM.Allocate sur /pool/{pool}) | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/clone` | Create a container clone/copy | VM.Clone sur /vms/{vmid} et (VM.Allocate sur /vms/{newid} ou VM.Allocate sur /pool/{pool}) | Fait |
 
 ### Conteneur LXC : config
 
@@ -1116,8 +1116,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/lxc/{vmid}/migrate` | Get preconditions for migration. | VM.Migrate sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/lxc/{vmid}/migrate` | Migrate the container to another node. Creates a new migration task. | VM.Migrate sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/migrate` | Get preconditions for migration. | VM.Migrate sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/lxc/{vmid}/migrate` | Migrate the container to another node. Creates a new migration task. | VM.Migrate sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : move_volume
 
@@ -1202,7 +1202,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/lxc/{vmid}/template` | Create a Template. | VM.Allocate sur /vms/{vmid} | À faire |
+| POST | `/nodes/{node}/lxc/{vmid}/template` | Create a Template. | VM.Allocate sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : termproxy
 
@@ -1440,13 +1440,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Pools
 
-7 points d'entrée : 0 faits, 7 à faire, 0 hors périmètre.
+7 points d'entrée : 1 faits, 6 à faire, 0 hors périmètre.
 
 ### Pools : pools
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/pools` | List pools or get pool configuration. | List all pools where you have Pool.Audit permissions on /pool/<pool>, or the pool specific with {poolid} | À faire |
+| GET | `/pools` | List pools or get pool configuration. | List all pools where you have Pool.Audit permissions on /pool/<pool>, or the pool specific with {poolid} | Fait |
 | POST | `/pools` | Create new pool. | Pool.Allocate sur /pool/{poolid} | À faire |
 | PUT | `/pools` | Update pool. | Pool.Allocate sur /pool/{poolid} | À faire |
 | DELETE | `/pools` | Delete pool. | Pool.Allocate sur /pool/{poolid} | À faire |

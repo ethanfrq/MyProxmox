@@ -609,3 +609,6 @@ a.user-chip:hover { color: var(--panel); }
 .snap-branch { color: var(--muted); }
 .snap-current td { background: var(--sel-bg); }
 .crumbs { font-size: 13px; }
+.tpl-card { text-align: left; padding: 16px; cursor: pointer; font: inherit; color: inherit; }
+.tpl-card:hover { border-color: var(--orange); }
+.tpl-card:focus-visible { outline: 2px solid var(--orange); }

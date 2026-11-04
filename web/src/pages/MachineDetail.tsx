@@ -18,8 +18,10 @@ import { Snapshots } from "./machine/Snapshots";
 import { Backups } from "./machine/Backups";
 import { DeleteGuest } from "./machine/Danger";
 import { GuestNetwork } from "./machine/Network";
+import { Replication } from "./machine/Replication";
+import { MoreActions } from "./machine/Lifecycle";
 
-type Tab = "resume" | "reseau" | "materiel" | "cloudinit" | "options" | "historique" | "snapshots" | "sauvegardes" | "supprimer";
+type Tab = "resume" | "reseau" | "materiel" | "cloudinit" | "options" | "historique" | "snapshots" | "sauvegardes" | "replication" | "supprimer";
 
 export function MachineDetail() {
   const params = useParams<{ node: string; type: "qemu" | "lxc"; vmid: string }>();
@@ -58,6 +60,7 @@ export function MachineDetail() {
     { id: "historique", label: "Historique" },
     { id: "snapshots", label: "Snapshots" },
     { id: "sauvegardes", label: "Sauvegardes" },
+    { id: "replication", label: "Réplication" },
     { id: "supprimer", label: "Supprimer" },
   ];
 
@@ -72,6 +75,7 @@ export function MachineDetail() {
         actions={
           <>
             {s && !template && <GuestActions g={g} full onChange={status.refresh} />}
+            {ctx && <MoreActions ctx={ctx} />}
             {consoleUrl && !DEMO && !template && (
               <a className="btn" href={consoleUrl} target="_blank" rel="noreferrer" title="Ouvre la console noVNC de Proxmox (connexion à Proxmox requise dans ce navigateur)">
                 <I.console /> Console
@@ -94,6 +98,7 @@ export function MachineDetail() {
           {tab === "historique" && <History ctx={ctx} />}
           {tab === "snapshots" && <Snapshots ctx={ctx} />}
           {tab === "sauvegardes" && <Backups ctx={ctx} />}
+          {tab === "replication" && <Replication ctx={ctx} />}
           {tab === "supprimer" && <DeleteGuest base={base} node={node} vmid={vmid} name={name} running={running} />}
         </>
       )}
