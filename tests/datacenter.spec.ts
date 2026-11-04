@@ -105,3 +105,39 @@ test("stockage : ajouter un NFS (partages trouvés sur le serveur), modifier, re
   await expect(page.getByRole("dialog")).toContainText("Liste indisponible");
   expect(errors.filter((e) => !e.includes("500"))).toEqual([]);
 });
+
+test("sauvegardes planifiées : créer par tag, exécuter maintenant, machines non couvertes", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "sauvegardes");
+  await expect(page.locator(".panel", { hasText: "Machines non couvertes" })).toContainText("lab-kali");
+  await page.getByRole("button", { name: "Créer une tâche" }).click();
+  const dlg = page.getByRole("dialog");
+  await dlg.getByLabel("Machines à sauvegarder").selectOption("tag");
+  await expect(dlg.getByLabel("Tag")).toContainText("lab");
+  await dlg.getByLabel("Tag").selectOption("lab");
+  await dlg.getByLabel("Garder les dernières").fill("5");
+  await dlg.getByLabel("Commentaire").fill("Machines du lab");
+  await dlg.getByRole("button", { name: "Enregistrer" }).click();
+  const row = page.locator("tr", { hasText: "Machines du lab" });
+  await expect(row).toContainText("103");
+  await expect(page.locator(".panel", { hasText: "Machines non couvertes" })).not.toContainText("lab-kali");
+  await row.getByRole("button", { name: "Exécuter maintenant" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Lancer" }).click();
+  await expect(page.getByText(/Sauvegarde backup-.* : terminé/).first()).toBeVisible();
+  await row.getByRole("button", { name: "Supprimer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Supprimer" }).click();
+  expect(errors).toEqual([]);
+});
+
+test("réplication du cluster", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "replication");
+  await expect(page.locator("main table")).toContainText("106-0");
+  await page.getByRole("button", { name: "Ajouter une réplication" }).click();
+  await page.getByRole("dialog").getByLabel("Machine").selectOption({ label: "104 nextcloud (sur pve)" });
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("tr", { hasText: "104-" })).toContainText("pve2");
+  expect(errors).toEqual([]);
+});

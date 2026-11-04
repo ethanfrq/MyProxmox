@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 76 | 115 | 12 | 3 (lecture sauvegardes), 6 |
-| [Cluster](#cluster) | 60 | 14 | 37 | 9 | 3 (quorum, HA, tâches), 6 |
+| [Datacenter](#datacenter) | 203 | 80 | 111 | 12 | 3 (lecture sauvegardes), 6 |
+| [Cluster](#cluster) | 60 | 15 | 36 | 9 | 3 (quorum, HA, tâches), 6 |
 | [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 18 | 13 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **319** | **300** | **61** | |
+| **Total** | **680** | **324** | **295** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 76 faits, 115 à faire, 12 hors périmètre.
+203 points d'entrée : 80 faits, 111 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -76,11 +76,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/backup` | List vzdump backup schedule. | Sys.Audit sur / | Fait |
-| POST | `/cluster/backup` | Create new vzdump backup job. | Sys.Modify sur / | À faire |
+| POST | `/cluster/backup` | Create new vzdump backup job. | Sys.Modify sur / | Fait |
 | GET | `/cluster/backup/{id}` | Read vzdump backup job definition. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/backup/{id}` | Update vzdump backup job definition. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/backup/{id}` | Delete vzdump backup job definition. | Sys.Modify sur / | À faire |
-| GET | `/cluster/backup/{id}/included_volumes` | Returns included guests and the backup status of their disks. Optimized to be used in ExtJS tree views. | Sys.Audit sur / | À faire |
+| PUT | `/cluster/backup/{id}` | Update vzdump backup job definition. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/backup/{id}` | Delete vzdump backup job definition. | Sys.Modify sur / | Fait |
+| GET | `/cluster/backup/{id}/included_volumes` | Returns included guests and the backup status of their disks. Optimized to be used in ExtJS tree views. | Sys.Audit sur / | Fait |
 
 ### Datacenter : backup-info
 
@@ -316,7 +316,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Cluster
 
-60 points d'entrée : 14 faits, 37 à faire, 9 hors périmètre.
+60 points d'entrée : 15 faits, 36 à faire, 9 hors périmètre.
 
 ### Cluster : (racine)
 
@@ -409,7 +409,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/cluster/replication` | List replication jobs. | Will only return replication jobs for which the calling user has VM.Audit permission on /vms/<vmid>. | À faire |
+| GET | `/cluster/replication` | List replication jobs. | Will only return replication jobs for which the calling user has VM.Audit permission on /vms/<vmid>. | Fait |
 | POST | `/cluster/replication` | Create a new replication job | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
 | GET | `/cluster/replication/{id}` | Read replication job configuration. | Requires the VM.Audit permission on /vms/<vmid>. | À faire |
 | PUT | `/cluster/replication/{id}` | Update replication job configuration. | Requires the VM.Replicate permission on /vms/<vmid>. | Fait |
