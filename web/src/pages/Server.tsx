@@ -10,6 +10,8 @@ import { NodeLogs } from "./node/Logs";
 import { NodeSubscription } from "./node/Subscription";
 import { NodeReplication } from "./node/Replication";
 import { NodeLegacy } from "./node/Legacy";
+import { NodeNetwork } from "./node/Network";
+import { NodeSystem } from "./node/System";
 
 const NodeShell = lazy(() => import("./node/Shell"));
 
@@ -48,7 +50,9 @@ export function Server() {
           {tab === "resume" && <NodeSummary node={node} />}
           {tab === "shell" && <Suspense fallback={<div className="empty">Chargement du shell…</div>}><NodeShell node={node} cmd={params.get("cmd") === "upgrade" ? "upgrade" : undefined} /></Suspense>}
           {(tab === "disques" || tab === "maj") && <NodeLegacy node={node} tab={tab} />}
-          {(tab === "reseau" || tab === "systeme" || tab === "certificats" || tab === "ceph") && <Notice>Cette partie arrive dans la suite de la phase 5.</Notice>}
+          {tab === "reseau" && <NodeNetwork node={node} />}
+          {tab === "systeme" && <NodeSystem node={node} />}
+          {(tab === "certificats" || tab === "ceph") && <Notice>Cette partie arrive dans la suite de la phase 5.</Notice>}
           {tab === "services" && <NodeServices node={node} />}
           {tab === "replication" && <NodeReplication node={node} />}
           {tab === "journaux" && <NodeLogs node={node} />}

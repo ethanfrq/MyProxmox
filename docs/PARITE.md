@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 22 | 169 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 45 | 106 | 22 | 3 (lecture), 5 |
+| [Nœud](#nœud) | 173 | 58 | 93 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **197** | **422** | **61** | |
+| **Total** | **680** | **210** | **409** | **61** | |
 
 ## Phases
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 45 faits, 106 à faire, 22 hors périmètre.
+173 points d'entrée : 58 faits, 93 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -571,7 +571,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/dns` | Read DNS settings. | Sys.Audit sur /nodes/{node} | Fait |
-| PUT | `/nodes/{node}/dns` | Write DNS settings. | Sys.Modify sur /nodes/{node} | À faire |
+| PUT | `/nodes/{node}/dns` | Write DNS settings. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : execute
 
@@ -607,8 +607,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/hosts` | Get the content of /etc/hosts. | Sys.Audit sur / | À faire |
-| POST | `/nodes/{node}/hosts` | Write /etc/hosts. | Sys.Modify sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/hosts` | Get the content of /etc/hosts. | Sys.Audit sur / | Fait |
+| POST | `/nodes/{node}/hosts` | Write /etc/hosts. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : journal
 
@@ -633,12 +633,12 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/network` | List available networks | tout utilisateur connecté | Fait |
-| POST | `/nodes/{node}/network` | Create network device configuration | Sys.Modify sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/network` | Reload network configuration | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/network` | Revert network configuration changes. | Sys.Modify sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/network` | Create network device configuration | Sys.Modify sur /nodes/{node} | Fait |
+| PUT | `/nodes/{node}/network` | Reload network configuration | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/network` | Revert network configuration changes. | Sys.Modify sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/network/{iface}` | Read network device configuration | Sys.Audit sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/network/{iface}` | Update network device configuration | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/network/{iface}` | Delete network device configuration | Sys.Modify sur /nodes/{node} | À faire |
+| PUT | `/nodes/{node}/network/{iface}` | Update network device configuration | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/network/{iface}` | Delete network device configuration | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : query-oci-repo-tags
 
@@ -703,11 +703,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/nodes/{node}/services` | Service list. | Sys.Audit sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/services/{service}` | Directory index | Sys.Audit sur /nodes/{node} | Hors périmètre |
-| POST | `/nodes/{node}/services/{service}/reload` | Reload service. Falls back to restart if service cannot be reloaded. | Sys.Modify sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/services/{service}/restart` | Hard restart service. Use reload if you want to reduce interruptions. | Sys.Modify sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/services/{service}/start` | Start service. | Sys.Modify sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/services/{service}/reload` | Reload service. Falls back to restart if service cannot be reloaded. | Sys.Modify sur /nodes/{node} | Fait |
+| POST | `/nodes/{node}/services/{service}/restart` | Hard restart service. Use reload if you want to reduce interruptions. | Sys.Modify sur /nodes/{node} | Fait |
+| POST | `/nodes/{node}/services/{service}/start` | Start service. | Sys.Modify sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/services/{service}/state` | Read service properties | Sys.Audit sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/services/{service}/stop` | Stop service. | Sys.Modify sur /nodes/{node} | À faire |
+| POST | `/nodes/{node}/services/{service}/stop` | Stop service. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : spiceshell
 
@@ -776,7 +776,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/time` | Read server time and time zone settings. | Sys.Audit sur /nodes/{node} | Fait |
-| PUT | `/nodes/{node}/time` | Set time zone. | Sys.Modify sur /nodes/{node} | À faire |
+| PUT | `/nodes/{node}/time` | Set time zone. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : version
 

@@ -482,6 +482,8 @@ textarea.input { height: auto; padding: 8px 10px; min-height: 80px; resize: vert
   --bar-hover: #3a3a3a;
   --blue-soft: #e9eff7;
   --shadow: 0 12px 32px rgba(0,0,0,.18);
+  --diff-add: #6fd27a; --diff-add-bg: rgba(111, 210, 122, .08);
+  --diff-del: #ff7b7b; --diff-del-bg: rgba(255, 123, 123, .08);
 }
 .toast { display: flex; align-items: center; gap: 12px; }
 .toast > span { flex: 1; }
@@ -626,3 +628,6 @@ a.user-chip:hover { color: var(--panel); }
 .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
 .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .filters .input { height: 32px; min-width: 150px; }
+.diff { background: var(--code-bg); color: var(--line); padding: 12px 14px; font-family: var(--mono); font-size: 12.5px; white-space: pre; overflow-x: auto; margin: 0; max-height: 380px; }
+.diff .add { color: var(--diff-add); background: var(--diff-add-bg); }
+.diff .del { color: var(--diff-del); background: var(--diff-del-bg); }

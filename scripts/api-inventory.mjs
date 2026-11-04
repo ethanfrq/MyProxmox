@@ -48,6 +48,7 @@ const ALIAS_VALUES = {
   action: ["start", "shutdown", "reboot", "stop"],
   "r.type": ["qemu", "lxc"],
   "ctx.type": ["qemu", "lxc"],
+  "act.action": ["start", "stop", "restart", "reload"],
   "p.action": ["start", "shutdown", "reboot", "stop"],
 };
 // Préfixes stockés dans une variable avant d'être utilisés. Une liste = plusieurs chemins possibles
