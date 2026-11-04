@@ -10,12 +10,12 @@ import { DEMO, REPO_URL } from "../lib/env";
 import { date } from "../../../shared/format";
 import type { Modules } from "../../../shared/types";
 
-type Item = { to: string; label: string; icon: () => ReactElement; module?: keyof Modules; end?: boolean };
+type Item = { to: string; label: string; icon: () => ReactElement; module?: keyof Modules; end?: boolean; admin?: boolean; write?: boolean };
 const NAV: { group: string; items: Item[] }[] = [
   { group: "Pilotage", items: [
     { to: "/", label: "Vue d'ensemble", icon: I.overview, end: true },
     { to: "/machines", label: "Machines", icon: I.machines },
-    { to: "/creer", label: "Créer", icon: I.plus },
+    { to: "/creer", label: "Créer", icon: I.plus, write: true },
   ] },
   { group: "Infrastructure", items: [
     { to: "/serveur", label: "Serveur", icon: I.server },
@@ -30,7 +30,8 @@ const NAV: { group: string; items: Item[] }[] = [
   ] },
   { group: "Système", items: [
     { to: "/claude", label: "Claude & MCP", icon: I.claude, module: "mcp" },
-    { to: "/parametres", label: "Paramètres", icon: I.settings },
+    { to: "/parametres", label: "Paramètres", icon: I.settings, end: true },
+    { to: "/parametres/comptes", label: "Comptes MyProxmox", icon: I.key, admin: true },
   ] },
 ];
 
@@ -92,13 +93,15 @@ export function Shell() {
             </div>
           )}
         </div>
-        <span className="user-chip">{me.username}{me.admin && <span className="tag">admin</span>}</span>
+        {me.kind === "local"
+          ? <Link to="/compte" className="user-chip" title="Mon compte">{me.displayName ?? me.username}<span className="tag">lecture seule</span></Link>
+          : <span className="user-chip">{me.username}{me.admin && <span className="tag">admin</span>}</span>}
         <button className="icon-btn" title="Déconnexion" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); resetPermissions(); navigate("/login"); }}><I.logout /></button>
       </header>
       <div className="layout">
         <nav className="side" aria-label="Navigation">
           {NAV.map((g) => {
-            const items = g.items.filter((it) => !it.module || mods?.[it.module] !== false);
+            const items = g.items.filter((it) => (!it.module || mods?.[it.module] !== false) && (!it.admin || me.admin) && (!it.write || !me.readOnly));
             if (!items.length) return null;
             return (
               <div key={g.group}>

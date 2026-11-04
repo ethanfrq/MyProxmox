@@ -3,15 +3,25 @@
 // Un redémarrage de l'app déconnecte tout le monde, c'est voulu.
 import type { Request, Response, NextFunction } from "express";
 import { randomBytes } from "node:crypto";
-import { renew, ticketCall } from "./pve";
-import type { Call } from "../../shared/types";
+import { renew, serviceCall, ticketCall } from "./pve";
+import type { Call, LocalRole } from "../../shared/types";
 
+/**
+ * Deux sortes de sessions, avec le même cookie :
+ *  - "proxmox" : connexion avec un compte Proxmox, on garde son ticket ;
+ *  - "local"   : compte MyProxmox, qui lit Proxmox avec le jeton de service et
+ *                n'a accès qu'à ce que son rôle permet (voir local-access.ts).
+ */
 export interface Session {
   id: string;
+  kind: "proxmox" | "local";
   username: string;
-  ticket: string;
+  ticket: string; // vide pour une session locale
   csrf: string;
   admin: boolean;
+  role?: LocalRole;
+  userId?: string;
+  displayName?: string;
   renewedAt: number;
   lastSeen: number;
 }
@@ -58,7 +68,7 @@ export async function getSession(req: Request): Promise<Session | null> {
     return null;
   }
   s.lastSeen = Date.now();
-  if (Date.now() - s.renewedAt > RENEW) {
+  if (s.kind === "proxmox" && Date.now() - s.renewedAt > RENEW) {
     try {
       const r = await renew(s.username, s.ticket);
       s.ticket = r.ticket;
@@ -86,12 +96,17 @@ export async function requireSession(req: Request, res: Response, next: NextFunc
   const s = await getSession(req);
   if (!s) return res.status(401).json({ error: "Session expirée, reconnecte-toi." });
   req.session = s;
-  req.call = ticketCall(s.ticket, s.csrf);
+  req.call = s.kind === "local" ? serviceCall() : ticketCall(s.ticket, s.csrf);
   next();
 }
 
+/** Ferme toutes les sessions d'un compte local (désactivation, suppression, nouveau mot de passe). */
+export function destroyUserSessions(userId: string) {
+  for (const [id, s] of sessions) if (s.userId === userId) sessions.delete(id);
+}
+
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session?.admin) return res.status(403).json({ error: "Réservé aux comptes qui ont le droit Sys.Modify sur « / » dans Proxmox." });
+  if (!req.session?.admin || req.session.kind !== "proxmox") return res.status(403).json({ error: "Réservé aux comptes Proxmox qui ont le droit Sys.Modify sur « / »." });
   next();
 }
 

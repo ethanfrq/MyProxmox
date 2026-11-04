@@ -1,7 +1,7 @@
 // Écran de monitoring : lecture seule, rafraîchi toutes les 5 secondes, pensé
 // pour rester affiché en permanence sur une TV ou un second écran.
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Meter } from "../components/ui";
 import { Sparkline } from "../components/Sparkline";
 import { api, usePoll } from "../lib/api";
@@ -24,8 +24,19 @@ function Clock() {
 export function Monitoring() {
   const [params] = useSearchParams();
   const key = params.get("key") ?? undefined;
+  const navigate = useNavigate();
   const snap = usePoll(() => api("/api/monitoring", { query: { key } }), 5000, [key]);
   const d = snap.data;
+  // Sans lien secret, l'écran suit la session : on propose de se déconnecter
+  const [viewer, setViewer] = useState<{ username: string; local: boolean } | null>(null);
+  useEffect(() => {
+    if (key) return;
+    api("/api/auth/me").then((m) => setViewer({ username: m.displayName ?? m.username, local: m.kind === "local" })).catch(() => navigate("/login?compte=local&next=/monitoring", { replace: true }));
+  }, [key, navigate]);
+  const logout = async () => {
+    await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+    navigate(viewer?.local ? "/login?compte=local" : "/login", { replace: true });
+  };
 
   // Garde l'écran allumé, et recharge la page toutes les 6 h (mise à jour de l'app, mémoire)
   useEffect(() => {
@@ -70,6 +81,12 @@ export function Monitoring() {
         <div className="row" style={{ marginLeft: "auto", gap: 18 }}>
           <span className="small" style={{ color: stale ? "#ff9a9a" : "#777" }}>{stale ? "Données non mises à jour" : `Mis à jour ${new Date(d.at).toLocaleTimeString("fr-FR")}`}</span>
           <button className="btn btn-sm btn-dark" style={{ borderColor: "#444" }} onClick={() => document.documentElement.requestFullscreen?.()}>Plein écran</button>
+          {viewer && (
+            <span className="mon-who">
+              {viewer.local ? <Link to="/compte" title="Mon compte">{viewer.username}</Link> : <Link to="/">{viewer.username}</Link>}
+              <button type="button" onClick={logout}>Se déconnecter</button>
+            </span>
+          )}
           <Clock />
         </div>
       </div>

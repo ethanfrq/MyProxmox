@@ -22,6 +22,9 @@ import { Security } from "./pages/Security";
 import { ClaudeMcp } from "./pages/ClaudeMcp";
 import { Settings } from "./pages/Settings";
 import { Monitoring } from "./pages/Monitoring";
+import { Register } from "./pages/Register";
+import { Account } from "./pages/Account";
+import { LocalAccounts } from "./pages/LocalAccounts";
 
 function Protected() {
   const [me, setMe] = useState<Me | null>(null);
@@ -34,7 +37,10 @@ function Protected() {
       const st = await api("/api/status");
       if (!st.setupDone) return navigate("/setup", { replace: true });
       try {
-        setMe(await api<Me>("/api/auth/me"));
+        const m = await api<Me>("/api/auth/me");
+        // Un compte monitoring ne voit que l'écran de monitoring
+        if (m.kind === "local" && m.role === "monitoring") return navigate("/monitoring", { replace: true });
+        setMe(m);
       } catch {
         navigate(`/login?next=${encodeURIComponent(loc.pathname)}`, { replace: true });
       }
@@ -60,6 +66,7 @@ function Protected() {
           <Route path="securite" element={<Security />} />
           <Route path="claude" element={<ClaudeMcp />} />
           <Route path="parametres" element={<Settings />} />
+          <Route path="parametres/comptes" element={<LocalAccounts />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -78,6 +85,8 @@ export function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<Setup />} />
+          <Route path="/inscription" element={<Register />} />
+          <Route path="/compte" element={<Account />} />
           <Route path="/monitoring" element={<Monitoring />} />
           <Route path="/*" element={<Protected />} />
         </Routes>

@@ -111,6 +111,19 @@ export function Empty({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>;
 }
 
+// ── Fenêtre simple (formulaires, détails) ───────────────────────────
+export function Modal({ title, children, onClose, wide, foot }: { title: ReactNode; children: ReactNode; onClose: () => void; wide?: boolean; foot?: ReactNode }) {
+  return (
+    <div className="modal-bg" onClick={onClose} onKeyDown={(e) => e.key === "Escape" && onClose()}>
+      <div className={`modal ${wide ? "modal-wide" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={typeof title === "string" ? title : undefined}>
+        <div className="modal-head"><h2>{title}</h2></div>
+        <div className="modal-body">{children}</div>
+        {foot && <div className="modal-foot">{foot}</div>}
+      </div>
+    </div>
+  );
+}
+
 // ── Fenêtre de confirmation ────────────────────────────────────────
 export function Confirm({
   title, children, confirmLabel = "Confirmer", danger, requireText, onConfirm, onClose,

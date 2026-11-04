@@ -29,6 +29,7 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 - [Première configuration](#première-configuration)
 - [Claude et MCP](#claude-et-mcp)
 - [Écran de monitoring](#écran-de-monitoring)
+- [Comptes MyProxmox](#comptes-myproxmox)
 - [Alertes et notifications](#alertes-et-notifications)
 - [Sécurité](#sécurité)
 - [Variables d'environnement](#variables-denvironnement)
@@ -118,7 +119,7 @@ npm ci && npm run build
 npm run demo
 ```
 
-Le mode démo utilise un faux Proxmox et ses propres données (`data-demo/`). N'importe quel identifiant fonctionne.
+Le mode démo utilise un faux Proxmox et ses propres données (`data-demo/`). N'importe quel identifiant Proxmox fonctionne. Côté comptes MyProxmox, essaie `tv-salon` (monitoring) ou `lea` (lecture), mot de passe `demo-monitoring`.
 
 ## Première configuration
 
@@ -154,6 +155,19 @@ Le tutoriel pas à pas, avec des exemples de questions, est dans [docs/MCP.md](d
 
 Dans **Paramètres > Écran de monitoring**, crée un lien secret et ouvre-le sur la TV (F11 pour le plein écran). L'écran se rafraîchit toutes les 5 secondes, garde l'affichage allumé, passe au rouge quand une alerte critique arrive et ne propose aucun bouton d'action. Il fonctionne sans compte Proxmox ; un nouveau lien désactive l'ancien.
 
+Tu peux aussi donner à quelqu'un un **compte MyProxmox** (voir plus bas) au rôle « monitoring » : il se connecte et arrive directement sur cet écran.
+
+## Comptes MyProxmox
+
+À côté des comptes Proxmox, MyProxmox gère ses propres comptes, sans rien créer dans Proxmox. Ils servent à regarder sans toucher :
+
+| Rôle | Ce que la personne voit |
+|---|---|
+| Monitoring | L'écran de monitoring, et rien d'autre (pas de barre latérale, l'API refuse le reste avec une erreur 403) |
+| Lecture | Toutes les pages, sans aucune action possible |
+
+Ces comptes lisent Proxmox avec le compte de service. Ils se gèrent dans **Paramètres > Comptes MyProxmox** : création, validation des inscriptions, changement de rôle, désactivation, nouveau mot de passe, suppression. L'inscription libre est fermée par défaut ; tu peux l'ouvrir avec validation par un administrateur (une notification arrive alors à chaque demande) ou sans validation (rôle monitoring seulement). Chaque personne peut activer la double authentification (TOTP) depuis **Mon compte**.
+
 ## Alertes et notifications
 
 Le serveur vérifie Proxmox toutes les minutes (disques, sauvegardes et mises à jour toutes les 15 minutes) :
@@ -177,6 +191,7 @@ Les seuils se règlent dans **Alertes > Règles**. Les notifications arrivent da
 - Le navigateur ne voit jamais de jeton Proxmox : il reçoit un cookie de session `HttpOnly`, et le ticket reste côté serveur.
 - Tout est filtré par plage IP, MCP et monitoring compris. Le PC qui héberge l'app garde toujours l'accès en local.
 - Les clés MCP et le lien de monitoring ne sont stockés que sous forme d'empreinte SHA-256.
+- Les mots de passe des comptes MyProxmox sont hachés avec scrypt (sel par compte) : 10 caractères minimum, les 1000 mots de passe les plus courants refusés, 5 échecs par minute et par IP au plus.
 - L'assistant de configuration se verrouille une fois terminé.
 - Le site envoie `X-Robots-Tag: noindex` et un `robots.txt` qui bloque l'indexation.
 
@@ -209,6 +224,7 @@ npm run dev        # serveur en mode démo + Vite sur http://localhost:5173
 npm run typecheck
 npm run build      # web/dist, server/dist, bridge/dist
 npm run build:demo # vitrine + démo statique (web/dist-demo), celle publiée sur Vercel
+npx playwright test # parcours de bout en bout en mode démo (lance le serveur tout seul)
 ```
 
 ```

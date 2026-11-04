@@ -1,5 +1,12 @@
 # Historique
 
+## 2.0.0 (en cours)
+
+- Socle commun : tableau triable avec actions groupées, formulaires décrits par schéma, assistants à étapes, journal des tâches en direct (« Voir le journal » dans les notifications), arbre des ressources à gauche (vues serveurs, pools, tags) avec menu contextuel
+- Les boutons d'action suivent les droits Proxmox de la personne connectée (`GET /access/permissions`)
+- Comptes MyProxmox, à côté des comptes Proxmox : rôles « monitoring » (écran de monitoring seul) et « lecture » (tout voir, rien changer), inscription libre réglable, validation par un administrateur, 2FA TOTP, page Paramètres > Comptes MyProxmox
+- Tests de bout en bout Playwright en mode démo
+
 ## 1.0.0
 
 Première version publique.
