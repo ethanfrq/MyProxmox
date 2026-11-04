@@ -1,7 +1,7 @@
 // Formulaire décrit par un schéma : on liste les champs, le composant s'occupe de
 // l'affichage, de la validation, de l'aide et des champs avancés repliables.
 // Les valeurs vides ne sont jamais envoyées à Proxmox (voir cleanValues).
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type FieldType =
   | "text" | "number" | "password" | "checkbox" | "select" | "api-select"
@@ -125,22 +125,27 @@ function ApiSelect({ f, value, onChange, id, values }: { f: FieldDef; value: any
   const [opts, setOpts] = useState<Option[] | null>(null);
   const [err, setErr] = useState("");
   const depKey = JSON.stringify((f.loadDeps ?? []).map((d) => values[d]));
+  // Valeur courante lue au moment où la liste arrive (le choix fait pendant le chargement compte)
+  const cur = useRef(value);
+  cur.current = value;
   useEffect(() => {
     let live = true;
     setOpts(null);
     setErr("");
-    f.load?.(values).then((o) => live && setOpts(o)).catch((e) => live && setErr((e as Error).message));
+    f.load?.(values).then((o) => {
+      if (!live) return;
+      // Choisit la première option si rien n'est sélectionné (ou si l'ancienne valeur n'existe plus),
+      // dans le même rendu que l'arrivée de la liste : aucun choix de l'utilisateur ne peut être écrasé.
+      const v = cur.current;
+      const keepEmpty = f.allowEmpty !== undefined && isEmpty(v);
+      if (o.length && !keepEmpty && (isEmpty(v) || !o.some((x) => x.value === String(v)))) onChange(o[0].value);
+      setOpts(o);
+    }).catch((e) => live && setErr((e as Error).message));
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.name, depKey]);
-  useEffect(() => {
-    // Choisit la première option si rien n'est sélectionné (ou si l'ancienne valeur n'existe plus)
-    if (!opts?.length || f.allowEmpty !== undefined && isEmpty(value)) return;
-    if (isEmpty(value) || !opts.some((o) => o.value === String(value))) onChange(opts[0].value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts]);
   if (err) return <div className="notice error">Liste indisponible : {err}</div>;
   if (opts && !opts.length && f.allowEmpty === undefined) return <div className="notice warn">Rien à choisir ici pour l&apos;instant.</div>;
   return (
