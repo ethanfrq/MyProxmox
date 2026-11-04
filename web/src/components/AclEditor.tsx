@@ -15,7 +15,7 @@ function parents(path: string) {
 }
 
 /** `path` : chemin exact (ex. /vms/101). `inherited` : affiche aussi les droits hérités des parents. */
-export function AclEditor({ path, inherited = true }: { path?: string; inherited?: boolean }) {
+export function AclEditor({ path, inherited = true, onChange }: { path?: string; inherited?: boolean; onChange?: () => void }) {
   const { toast } = useToast();
   const acl = usePoll(() => pve.get<Acl[]>("/access/acl"), 0);
   const { allowed } = usePermission(path ?? "/", "Permissions.Modify");
@@ -66,6 +66,7 @@ export function AclEditor({ path, inherited = true }: { path?: string; inherited
                 toast("Permission ajoutée", "ok");
                 setAdd(false);
                 acl.refresh();
+                onChange?.();
               }}
             />
           </div>
@@ -78,6 +79,7 @@ export function AclEditor({ path, inherited = true }: { path?: string; inherited
             await pve.put("/access/acl", { path: del.path, roles: del.roleid, [key]: del.ugid, delete: 1 });
             toast("Permission retirée", "ok");
             acl.refresh();
+            onChange?.();
           } catch (e) { toast((e as Error).message, "error"); }
         }} onClose={() => setDel(null)}>
           <p><strong>{del.ugid}</strong> perd le rôle {del.roleid} sur <span className="mono">{del.path}</span>.</p>

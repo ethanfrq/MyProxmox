@@ -141,3 +141,68 @@ test("réplication du cluster", async ({ page }) => {
   await expect(page.locator("tr", { hasText: "104-" })).toContainText("pve2");
   expect(errors).toEqual([]);
 });
+
+test("permissions : utilisateur, rôle personnalisé, ACL, jeton, 2FA, pool", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "permissions");
+  const name = uniq("alice");
+  await page.getByRole("button", { name: "Créer un utilisateur" }).click();
+  let dlg = page.getByRole("dialog");
+  await dlg.getByRole("textbox", { name: "Identifiant", exact: true }).fill(name);
+  await dlg.getByLabel("Mot de passe").fill("motdepasse-solide");
+  await dlg.getByLabel("famille").check();
+  await dlg.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("tr", { hasText: `${name}@pve` })).toContainText("famille");
+  await page.locator("tr", { hasText: `${name}@pve` }).getByRole("button", { name: "Mot de passe" }).click();
+  await page.getByRole("dialog").getByLabel("Nouveau mot de passe").fill("encore-plus-solide");
+  await page.getByRole("dialog").getByLabel("Confirme").fill("encore-plus-solide");
+  await page.getByRole("dialog").getByRole("button", { name: "Changer" }).click();
+  await expect(page.getByText("Mot de passe changé")).toBeVisible();
+
+  await page.getByRole("tab", { name: "Rôles" }).click();
+  await page.getByRole("button", { name: "Créer un rôle" }).click();
+  dlg = page.getByRole("dialog");
+  const role = uniq("Lecteur");
+  await dlg.getByLabel("Nom du rôle").fill(role);
+  await dlg.getByLabel(/^VM.Audit/).check();
+  await dlg.getByLabel(/^VM.Console/).check();
+  await dlg.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator("tr", { hasText: role })).toContainText("2 : VM.Audit, VM.Console");
+
+  await page.getByRole("tab", { name: "Permissions (ACL)" }).click();
+  await page.getByRole("button", { name: "Ajouter une permission" }).click();
+  dlg = page.getByRole("dialog");
+  await dlg.getByRole("textbox", { name: "Chemin", exact: true }).fill("/vms/102");
+  await dlg.getByLabel("Qui").selectOption(`${name}@pve`);
+  await dlg.getByLabel("Rôle").selectOption(role);
+  await dlg.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator(".acl-tree")).toContainText(`${name}@pve : ${role}`);
+
+  await page.getByRole("tab", { name: "Jetons API" }).click();
+  await page.getByRole("button", { name: "Créer un jeton" }).click();
+  dlg = page.getByRole("dialog");
+  await dlg.getByLabel("Utilisateur").selectOption(`${name}@pve`);
+  await dlg.getByLabel("Nom du jeton").fill("script");
+  await dlg.getByRole("button", { name: "Créer" }).click();
+  await expect(page.getByRole("dialog", { name: "Secret du jeton" })).toContainText(`${name}@pve!script`);
+  await page.getByRole("button", { name: "Je l'ai copié" }).click();
+
+  await page.getByRole("tab", { name: "Double authentification" }).click();
+  await page.getByLabel("Utilisateur").selectOption(`${name}@pve`);
+  await page.getByRole("button", { name: "Codes de récupération" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Générer" }).click();
+  await expect(page.getByRole("dialog", { name: "Codes de récupération" })).toContainText("-");
+  await page.getByRole("button", { name: "Je les ai notés" }).click();
+
+  await page.getByRole("tab", { name: "Pools" }).click();
+  await page.getByRole("button", { name: "Créer un pool" }).click();
+  const pool = uniq("pool");
+  await page.getByRole("dialog").getByRole("textbox", { name: "Nom", exact: true }).fill(pool);
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await page.locator("tr", { hasText: pool }).getByRole("button", { name: "Membres" }).click();
+  await page.getByRole("dialog").getByLabel("105 win11-test").check();
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("Membres enregistrés")).toBeVisible();
+  expect(errors).toEqual([]);
+});

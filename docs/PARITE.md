@@ -18,9 +18,9 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 18 | 13 | 2 | 3 (occupation), 7 |
-| [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
-| [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **324** | **295** | **61** | |
+| [Accès](#accès) | 45 | 28 | 14 | 3 | 1 (permissions), 6 |
+| [Pools](#pools) | 7 | 5 | 2 | 0 | 6 |
+| **Total** | **680** | **342** | **277** | **61** | |
 
 ## Phases
 
@@ -1331,7 +1331,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Accès
 
-45 points d'entrée : 14 faits, 28 à faire, 3 hors périmètre.
+45 points d'entrée : 28 faits, 14 à faire, 3 hors périmètre.
 
 ### Accès : (racine)
 
@@ -1351,21 +1351,21 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/access/domains` | Authentication domain index. | aucune (public) | Fait |
-| POST | `/access/domains` | Add an authentication server. | Realm.Allocate sur /access/realm | À faire |
+| POST | `/access/domains` | Add an authentication server. | Realm.Allocate sur /access/realm | Fait |
 | GET | `/access/domains/{realm}` | Get auth server configuration. | Realm.Allocate ou Sys.Audit sur /access/realm | À faire |
-| PUT | `/access/domains/{realm}` | Update authentication server settings. | Realm.Allocate sur /access/realm | À faire |
-| DELETE | `/access/domains/{realm}` | Delete an authentication server. | Realm.Allocate sur /access/realm | À faire |
-| POST | `/access/domains/{realm}/sync` | Syncs users and/or groups from the configured LDAP to user.cfg. NOTE: Synced groups will have the name 'name-$realm', so make sure those groups do not exist to prevent overwriting. | Realm.AllocateUser sur /access/realm/{realm} et User.Modify sur /access/groups | À faire |
+| PUT | `/access/domains/{realm}` | Update authentication server settings. | Realm.Allocate sur /access/realm | Fait |
+| DELETE | `/access/domains/{realm}` | Delete an authentication server. | Realm.Allocate sur /access/realm | Fait |
+| POST | `/access/domains/{realm}/sync` | Syncs users and/or groups from the configured LDAP to user.cfg. NOTE: Synced groups will have the name 'name-$realm', so make sure those groups do not exist to prevent overwriting. | Realm.AllocateUser sur /access/realm/{realm} et User.Modify sur /access/groups | Fait |
 
 ### Accès : groups
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/access/groups` | Group index. | The returned list is restricted to groups where you have 'User.Modify', 'Sys.Audit' or 'Group.Allocate' permissions on /access/groups/<group>. | Fait |
-| POST | `/access/groups` | Create new group. | Group.Allocate sur /access/groups | À faire |
+| POST | `/access/groups` | Create new group. | Group.Allocate sur /access/groups | Fait |
 | GET | `/access/groups/{groupid}` | Get group configuration. | Sys.Audit ou Group.Allocate sur /access/groups | À faire |
-| PUT | `/access/groups/{groupid}` | Update group data. | Group.Allocate sur /access/groups | À faire |
-| DELETE | `/access/groups/{groupid}` | Delete group. | Group.Allocate sur /access/groups | À faire |
+| PUT | `/access/groups/{groupid}` | Update group data. | Group.Allocate sur /access/groups | Fait |
+| DELETE | `/access/groups/{groupid}` | Delete group. | Group.Allocate sur /access/groups | Fait |
 
 ### Accès : openid
 
@@ -1379,7 +1379,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| PUT | `/access/password` | Change user password. | soi-même uniquement ou (Realm.AllocateUser sur le domaine de l'utilisateur et User.Modify sur l'utilisateur ou son groupe) | À faire |
+| PUT | `/access/password` | Change user password. | soi-même uniquement ou (Realm.AllocateUser sur le domaine de l'utilisateur et User.Modify sur l'utilisateur ou son groupe) | Fait |
 
 ### Accès : permissions
 
@@ -1395,7 +1395,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | POST | `/access/roles` | Create new role. | Sys.Modify sur /access | Fait |
 | GET | `/access/roles/{roleid}` | Get role configuration. | tout utilisateur connecté | À faire |
 | PUT | `/access/roles/{roleid}` | Update an existing role. | Sys.Modify sur /access | Fait |
-| DELETE | `/access/roles/{roleid}` | Delete role. | Sys.Modify sur /access | À faire |
+| DELETE | `/access/roles/{roleid}` | Delete role. | Sys.Modify sur /access | Fait |
 
 ### Accès : tfa
 
@@ -1403,10 +1403,10 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/access/tfa` | List TFA configurations of users. | Returns all or just the logged-in user, depending on privileges. | Fait |
 | GET | `/access/tfa/{userid}` | List TFA configurations of users. | soi-même uniquement ou User.Modify + Sys.Audit sur l'utilisateur ou son groupe | À faire |
-| POST | `/access/tfa/{userid}` | Add a TFA entry for a user. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | À faire |
+| POST | `/access/tfa/{userid}` | Add a TFA entry for a user. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | Fait |
 | GET | `/access/tfa/{userid}/{id}` | Fetch a requested TFA entry if present. | soi-même uniquement ou User.Modify + Sys.Audit sur l'utilisateur ou son groupe | À faire |
-| PUT | `/access/tfa/{userid}/{id}` | Add a TFA entry for a user. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | À faire |
-| DELETE | `/access/tfa/{userid}/{id}` | Delete a TFA entry by ID. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | À faire |
+| PUT | `/access/tfa/{userid}/{id}` | Add a TFA entry for a user. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | Fait |
+| DELETE | `/access/tfa/{userid}/{id}` | Delete a TFA entry by ID. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | Fait |
 
 ### Accès : ticket
 
@@ -1422,8 +1422,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/access/users` | User index. | The returned list is restricted to users where you have 'User.Modify' or 'Sys.Audit' permissions on '/access/groups' or on a group the user belongs too. But it… | Fait |
 | POST | `/access/users` | Create new user. | Realm.AllocateUser sur le domaine de l'utilisateur et User.Modify sur l'utilisateur ou son groupe | Fait |
 | GET | `/access/users/{userid}` | Get user configuration. | User.Modify + Sys.Audit sur l'utilisateur ou son groupe | À faire |
-| PUT | `/access/users/{userid}` | Update user configuration. | User.Modify sur l'utilisateur ou son groupe | À faire |
-| DELETE | `/access/users/{userid}` | Delete user. | Realm.AllocateUser sur le domaine de l'utilisateur et User.Modify sur l'utilisateur ou son groupe | À faire |
+| PUT | `/access/users/{userid}` | Update user configuration. | User.Modify sur l'utilisateur ou son groupe | Fait |
+| DELETE | `/access/users/{userid}` | Delete user. | Realm.AllocateUser sur le domaine de l'utilisateur et User.Modify sur l'utilisateur ou son groupe | Fait |
 | GET | `/access/users/{userid}/tfa` | Get user TFA types (Personal and Realm). | soi-même uniquement ou User.Modify + Sys.Audit sur l'utilisateur ou son groupe | À faire |
 | GET | `/access/users/{userid}/token` | Get user API tokens. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | À faire |
 | GET | `/access/users/{userid}/token/{tokenid}` | Get specific API token information. | soi-même uniquement ou User.Modify sur l'utilisateur ou son groupe | À faire |
@@ -1440,16 +1440,16 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Pools
 
-7 points d'entrée : 1 faits, 6 à faire, 0 hors périmètre.
+7 points d'entrée : 5 faits, 2 à faire, 0 hors périmètre.
 
 ### Pools : pools
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/pools` | List pools or get pool configuration. | List all pools where you have Pool.Audit permissions on /pool/<pool>, or the pool specific with {poolid} | Fait |
-| POST | `/pools` | Create new pool. | Pool.Allocate sur /pool/{poolid} | À faire |
+| POST | `/pools` | Create new pool. | Pool.Allocate sur /pool/{poolid} | Fait |
 | PUT | `/pools` | Update pool. | Pool.Allocate sur /pool/{poolid} | À faire |
 | DELETE | `/pools` | Delete pool. | Pool.Allocate sur /pool/{poolid} | À faire |
-| GET | `/pools/{poolid}` | Get pool configuration (deprecated, no support for nested pools, use 'GET /pools/?poolid={poolid}'). | Pool.Audit sur /pool/{poolid} | À faire |
-| PUT | `/pools/{poolid}` | Update pool data (deprecated, no support for nested pools - use 'PUT /pools/?poolid={poolid}' instead). | Pool.Allocate sur /pool/{poolid} | À faire |
-| DELETE | `/pools/{poolid}` | Delete pool (deprecated, no support for nested pools, use 'DELETE /pools/?poolid={poolid}'). | Pool.Allocate sur /pool/{poolid} | À faire |
+| GET | `/pools/{poolid}` | Get pool configuration (deprecated, no support for nested pools, use 'GET /pools/?poolid={poolid}'). | Pool.Audit sur /pool/{poolid} | Fait |
+| PUT | `/pools/{poolid}` | Update pool data (deprecated, no support for nested pools - use 'PUT /pools/?poolid={poolid}' instead). | Pool.Allocate sur /pool/{poolid} | Fait |
+| DELETE | `/pools/{poolid}` | Delete pool (deprecated, no support for nested pools, use 'DELETE /pools/?poolid={poolid}'). | Pool.Allocate sur /pool/{poolid} | Fait |
