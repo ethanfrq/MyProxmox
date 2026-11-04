@@ -60,6 +60,8 @@ export interface AclEntry { path: string; type: "user" | "group" | "token"; ugid
 export interface ReplJob { id: string; guest: number; target: string; schedule: string; type: string; jobnum: number; comment?: string; rate?: number; disable?: number; last_sync?: number; fail_count?: number }
 
 export interface State {
+  clusterFw: FwStore;
+  nodeFw: Record<string, FwStore>;
   acl: AclEntry[];
   replication: ReplJob[];
   ha: HaResource[];
@@ -218,7 +220,21 @@ export function init(): State {
     const d = new Date((t - daysAgo * DAY) * 1000).toISOString().replace(/\.\d+Z$/, "Z");
     return { volid: `pbs:backup/${type === "qemu" ? "vm" : "ct"}/${vmid}/${d}`, content: "backup", format: "pbs-" + (type === "qemu" ? "vm" : "ct"), size, ctime: t - daysAgo * DAY, vmid, notes: "Sauvegarde PBS", verification: { state: "ok", upid: "" }, protected: daysAgo > 20 ? 1 : 0 };
   };
+  const clusterFw = newFirewall({ enable: 0, policy_in: "DROP", policy_out: "ACCEPT" }, [
+    { type: "group", action: "admin", enable: 1, comment: "Accès d'administration" },
+  ]);
+  clusterFw.groups = [
+    { group: "admin", comment: "SSH et interface web depuis le LAN", rules: [
+      { type: "in", action: "ACCEPT", macro: "SSH", source: "lan", enable: 1 },
+      { type: "in", action: "ACCEPT", proto: "tcp", dport: "8006", source: "lan", enable: 1, comment: "Interface Proxmox" },
+    ] },
+    { group: "web", comment: "Serveurs web", rules: [{ type: "in", action: "ACCEPT", macro: "HTTP", enable: 1 }, { type: "in", action: "ACCEPT", macro: "HTTPS", enable: 1 }] },
+  ];
+  clusterFw.aliases = [{ name: "lan", cidr: "10.0.1.0/24", comment: "Réseau de la maison" }, { name: "nas", cidr: "10.0.1.10", comment: "NAS Synology" }];
+  clusterFw.ipsets = [{ name: "management", comment: "Postes d'administration", entries: [{ cidr: "10.0.1.42", comment: "PC d'Ethan" }, { cidr: "10.0.1.43" }] }];
   return {
+    clusterFw,
+    nodeFw: Object.fromEntries(NODES.map((n) => [n, newFirewall({ enable: 1, nosmurfs: 1, tcpflags: 0, ndp: 1 })])),
     acl: [
       { path: "/", type: "user", ugid: "ethan@pve", roleid: "PVEAdmin", propagate: 1 },
       { path: "/", type: "user", ugid: "myproxmox@pve", roleid: "MyProxmoxService", propagate: 1 },

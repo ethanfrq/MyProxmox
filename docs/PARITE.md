@@ -18,9 +18,9 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | [VM QEMU](#vm-qemu) | 97 | 25 | 65 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 23 | 33 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
-| [Accès](#accès) | 45 | 12 | 30 | 3 | 1 (permissions), 6 |
+| [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **112** | **507** | **61** | |
+| **Total** | **680** | **114** | **505** | **61** | |
 
 ## Phases
 
@@ -1331,7 +1331,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Accès
 
-45 points d'entrée : 12 faits, 30 à faire, 3 hors périmètre.
+45 points d'entrée : 14 faits, 28 à faire, 3 hors périmètre.
 
 ### Accès : (racine)
 
@@ -1361,7 +1361,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/access/groups` | Group index. | The returned list is restricted to groups where you have 'User.Modify', 'Sys.Audit' or 'Group.Allocate' permissions on /access/groups/<group>. | À faire |
+| GET | `/access/groups` | Group index. | The returned list is restricted to groups where you have 'User.Modify', 'Sys.Audit' or 'Group.Allocate' permissions on /access/groups/<group>. | Fait |
 | POST | `/access/groups` | Create new group. | Group.Allocate sur /access/groups | À faire |
 | GET | `/access/groups/{groupid}` | Get group configuration. | Sys.Audit ou Group.Allocate sur /access/groups | À faire |
 | PUT | `/access/groups/{groupid}` | Update group data. | Group.Allocate sur /access/groups | À faire |
@@ -1391,7 +1391,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/access/roles` | Role index. | tout utilisateur connecté | À faire |
+| GET | `/access/roles` | Role index. | tout utilisateur connecté | Fait |
 | POST | `/access/roles` | Create new role. | Sys.Modify sur /access | Fait |
 | GET | `/access/roles/{roleid}` | Get role configuration. | tout utilisateur connecté | À faire |
 | PUT | `/access/roles/{roleid}` | Update an existing role. | Sys.Modify sur /access | Fait |

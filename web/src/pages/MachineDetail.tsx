@@ -20,8 +20,11 @@ import { DeleteGuest } from "./machine/Danger";
 import { GuestNetwork } from "./machine/Network";
 import { Replication } from "./machine/Replication";
 import { MoreActions } from "./machine/Lifecycle";
+import { FirewallPanel } from "../components/Firewall";
+import { AclEditor } from "../components/AclEditor";
+import { Panel } from "../components/ui";
 
-type Tab = "resume" | "reseau" | "materiel" | "cloudinit" | "options" | "historique" | "snapshots" | "sauvegardes" | "replication" | "supprimer";
+type Tab = "resume" | "reseau" | "materiel" | "cloudinit" | "options" | "historique" | "snapshots" | "sauvegardes" | "replication" | "parefeu" | "permissions" | "supprimer";
 
 export function MachineDetail() {
   const params = useParams<{ node: string; type: "qemu" | "lxc"; vmid: string }>();
@@ -61,6 +64,8 @@ export function MachineDetail() {
     { id: "snapshots", label: "Snapshots" },
     { id: "sauvegardes", label: "Sauvegardes" },
     { id: "replication", label: "Réplication" },
+    { id: "parefeu", label: "Pare-feu" },
+    { id: "permissions", label: "Permissions" },
     { id: "supprimer", label: "Supprimer" },
   ];
 
@@ -99,6 +104,8 @@ export function MachineDetail() {
           {tab === "snapshots" && <Snapshots ctx={ctx} />}
           {tab === "sauvegardes" && <Backups ctx={ctx} />}
           {tab === "replication" && <Replication ctx={ctx} />}
+          {tab === "parefeu" && <FirewallPanel base={`${base}/firewall`} scope="vm" aclPath={`/vms/${vmid}`} priv="VM.Config.Network" />}
+          {tab === "permissions" && <Panel pad={false} title={`Permissions sur /vms/${vmid}`}><AclEditor path={`/vms/${vmid}`} /></Panel>}
           {tab === "supprimer" && <DeleteGuest base={base} node={node} vmid={vmid} name={name} running={running} />}
         </>
       )}

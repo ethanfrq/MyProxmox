@@ -612,3 +612,9 @@ a.user-chip:hover { color: var(--panel); }
 .tpl-card { text-align: left; padding: 16px; cursor: pointer; font: inherit; color: inherit; }
 .tpl-card:hover { border-color: var(--orange); }
 .tpl-card:focus-visible { outline: 2px solid var(--orange); }
+.fw-table tr.fw-off td { opacity: .55; }
+.fw-table tr.fw-off td:nth-child(2), .fw-table tr.fw-off td:last-child { opacity: 1; }
+.fw-table tr[draggable=true] { cursor: grab; }
+.fw-table tr.dragging td { opacity: .4; }
+.fw-table tr.drop-target td { box-shadow: inset 0 2px 0 var(--orange); }
+.fw-table .grip { color: var(--muted); }

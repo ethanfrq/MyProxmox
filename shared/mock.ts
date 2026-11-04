@@ -9,6 +9,7 @@ import {
 import type { Any, Params } from "./mock-core";
 import { NODE2, NODES, isVolumeKey, sizeOf } from "./mock-core";
 import { guestRoute } from "./mock-guest";
+import { firewallRoute } from "./mock-firewall";
 
 export { resetMock, PVE_PRIVS } from "./mock-core";
 
@@ -129,7 +130,10 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   if (route === "GET /cluster/tasks") return s.tasks.slice(0, 60).map(({ log, ...t }) => t);
   if (route === "GET /cluster/backup") return [{ id: "backup-nightly", enabled: 1, schedule: "02:00", storage: "backup-nas", vmid: "100,101,102,104,106", mode: "snapshot", compress: "zstd", "next-run": now() + 8 * 3600 }];
   if (route === "GET /cluster/backup-info/not-backed-up") return s.guests.filter((x) => ![100, 101, 102, 104, 106].includes(x.vmid)).map((x) => ({ vmid: x.vmid, name: x.name, type: x.type }));
-  if (route === "GET /cluster/firewall/options") return { enable: 0, policy_in: "DROP", policy_out: "ACCEPT" };
+  if (seg[0] === "cluster" && seg[1] === "firewall") {
+    const fr = firewallRoute(s.clusterFw, method, seg.slice(2), p, fail);
+    if (fr !== undefined) return fr;
+  }
   if (route === "GET /cluster/ha/status/current") {
     return [
       { id: "quorum", type: "quorum", status: "OK", quorate: 1, node: NODE },
@@ -263,7 +267,10 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   }
   if (r === "GET /subscription") return { status: "notfound", message: "There is no subscription key" };
   if (r === "GET /syslog" || r === "GET /journal") return SYSLOG();
-  if (r === "GET /firewall/options") return { enable: 1 };
+  if (rest[0] === "firewall") {
+    const fr = firewallRoute(s.nodeFw[node], method, rest.slice(1), p, fail);
+    if (fr !== undefined) return fr;
+  }
   if (r === "GET /hosts") return { data: "127.0.0.1 localhost\n10.0.1.101 pve.maison.lan pve\n" };
 
   // ── Stockage ─────────────────────────────────────────────────────
