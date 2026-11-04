@@ -1,5 +1,6 @@
 // Santé du serveur : tout ce que l'interface Proxmox éparpille dans plusieurs menus.
 import { Fragment, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button, Empty, Meter, Notice, PageHead, Panel, Tabs } from "../components/ui";
 import { api, pve, usePoll } from "../lib/api";
 import { bytes, date, pct, uptime } from "../../../shared/format";
@@ -8,7 +9,9 @@ type Tab = "sante" | "disques" | "maj" | "services" | "systeme";
 
 export function Server() {
   const nodes = usePoll(() => pve.get<any[]>("/nodes"), 0);
-  const [node, setNode] = useState("");
+  const [params] = useSearchParams();
+  const [node, setNode] = useState(params.get("node") ?? "");
+  useEffect(() => { if (params.get("node")) setNode(params.get("node")!); }, [params]);
   const [tab, setTab] = useState<Tab>("sante");
   useEffect(() => { if (!node && nodes.data?.[0]) setNode(nodes.data[0].node); }, [nodes.data, node]);
   const h = usePoll(() => (node ? api(`/api/insights/server/${node}`) : Promise.resolve(null)), 30000, [node]);

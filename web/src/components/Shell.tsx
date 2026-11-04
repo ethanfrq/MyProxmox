@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { I } from "./icons";
 import { Button, useToast } from "./ui";
+import { TreePanel } from "./Tree";
+import { resetPermissions } from "../lib/permissions";
 import { api } from "../lib/api";
 import { useApp } from "../lib/app";
 import { DEMO, REPO_URL } from "../lib/env";
@@ -91,7 +93,7 @@ export function Shell() {
           )}
         </div>
         <span className="user-chip">{me.username}{me.admin && <span className="tag">admin</span>}</span>
-        <button className="icon-btn" title="Déconnexion" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); navigate("/login"); }}><I.logout /></button>
+        <button className="icon-btn" title="Déconnexion" onClick={async () => { await api("/api/auth/logout", { method: "POST" }); resetPermissions(); navigate("/login"); }}><I.logout /></button>
       </header>
       <div className="layout">
         <nav className="side" aria-label="Navigation">
@@ -112,6 +114,7 @@ export function Shell() {
           })}
           {settings && <div className="side-group" style={{ marginTop: 20, textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>v{settings.version}</div>}
         </nav>
+        <TreePanel />
         <main className="main"><Outlet /></main>
       </div>
     </>

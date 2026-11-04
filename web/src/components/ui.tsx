@@ -1,7 +1,8 @@
 // Petits composants réutilisables : boutons, panneaux, jauges, onglets, fenêtres.
-import { createContext, useCallback, useContext, useState, type ReactNode, type ButtonHTMLAttributes } from "react";
+import { cloneElement, createContext, isValidElement, useCallback, useContext, useId, useState, type ReactElement, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { pve } from "../lib/api";
 import { STATUS_LABEL, TASK_LABEL } from "../../../shared/format";
+import { TaskLogModal } from "./TaskLog";
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "dark" | "danger" | "ghost" | "default";
@@ -88,10 +89,15 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: 
 }
 
 export function Field({ label, help, children, full }: { label: string; help?: ReactNode; children: ReactNode; full?: boolean }) {
+  // Relie le libellé au champ (accessibilité, lecteurs d'écran, tests)
+  const auto = useId();
+  const child = isValidElement(children) ? (children as ReactElement<{ id?: string }>) : null;
+  const id = child?.props.id ?? auto;
+  const linked = child && typeof child.type === "string" && ["input", "select", "textarea"].includes(child.type) ? cloneElement(child, { id }) : null;
   return (
     <div className={`field ${full ? "full" : ""}`}>
-      <label>{label}</label>
-      {children}
+      <label htmlFor={linked ? id : undefined}>{label}</label>
+      {linked ?? children}
       {help && <div className="help">{help}</div>}
     </div>
   );
@@ -147,36 +153,44 @@ export function Confirm({
 }
 
 // ── Notifications + suivi des tâches Proxmox ───────────────────────
-interface Toast { id: number; kind: "info" | "ok" | "error"; text: string }
+interface ToastAction { label: string; onClick: () => void }
+interface Toast { id: number; kind: "info" | "ok" | "error"; text: string; action?: ToastAction }
 interface ToastApi {
-  toast: (text: string, kind?: Toast["kind"]) => void;
+  toast: (text: string, kind?: Toast["kind"], action?: ToastAction) => void;
   // Suit une tâche Proxmox (UPID) jusqu'à la fin et prévient l'utilisateur.
   watch: (node: string, upid: string, label?: string, onDone?: () => void) => void;
+  // Ouvre le journal d'une tâche dans une fenêtre.
+  showLog: (upid: string, node?: string) => void;
 }
-const Ctx = createContext<ToastApi>({ toast: () => {}, watch: () => {} });
+const Ctx = createContext<ToastApi>({ toast: () => {}, watch: () => {}, showLog: () => {} });
 export const useToast = () => useContext(Ctx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [list, setList] = useState<Toast[]>([]);
+  const [log, setLog] = useState<{ upid: string; node?: string } | null>(null);
 
-  const toast = useCallback((text: string, kind: Toast["kind"] = "info") => {
+  const dismiss = useCallback((id: number) => setList((l) => l.filter((t) => t.id !== id)), []);
+  const toast = useCallback((text: string, kind: Toast["kind"] = "info", action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setList((l) => [...l, { id, kind, text }]);
-    setTimeout(() => setList((l) => l.filter((t) => t.id !== id)), kind === "error" ? 8000 : 4000);
-  }, []);
+    setList((l) => [...l, { id, kind, text, action }]);
+    setTimeout(() => dismiss(id), kind === "error" || action ? 8000 : 4000);
+  }, [dismiss]);
+
+  const showLog = useCallback((upid: string, node?: string) => setLog({ upid, node }), []);
 
   const watch = useCallback((node: string, upid: string, label?: string, onDone?: () => void) => {
     const type = upid.split(":")[5] ?? "";
     const name = label ?? TASK_LABEL[type] ?? type;
-    toast(`${name} : en cours…`);
+    const action = { label: "Voir le journal", onClick: () => showLog(upid, node) };
+    toast(`${name} : en cours…`, "info", action);
     let tries = 0;
     const tick = async () => {
       tries++;
       try {
         const st = await pve.get(`/nodes/${node}/tasks/${encodeURIComponent(upid)}/status`);
         if (st.status === "stopped") {
-          if (st.exitstatus === "OK") toast(`${name} : terminé`, "ok");
-          else toast(`${name} : échec (${st.exitstatus})`, "error");
+          if (st.exitstatus === "OK") toast(`${name} : terminé`, "ok", action);
+          else toast(`${name} : échec (${st.exitstatus})`, "error", action);
           onDone?.();
           return;
         }
@@ -186,14 +200,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       if (tries < 300) setTimeout(tick, 1500);
     };
     setTimeout(tick, 800);
-  }, [toast]);
+  }, [toast, showLog]);
 
   return (
-    <Ctx.Provider value={{ toast, watch }}>
+    <Ctx.Provider value={{ toast, watch, showLog }}>
       {children}
       <div className="toasts" aria-live="polite">
-        {list.map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.text}</div>)}
+        {list.map((t) => (
+          <div key={t.id} className={`toast ${t.kind}`}>
+            <span>{t.text}</span>
+            {t.action && <button className="toast-action" onClick={() => { t.action!.onClick(); dismiss(t.id); }}>{t.action.label}</button>}
+          </div>
+        ))}
       </div>
+      {log && <TaskLogModal upid={log.upid} node={log.node} onClose={() => setLog(null)} />}
     </Ctx.Provider>
   );
 }

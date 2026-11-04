@@ -10,3 +10,6 @@ Thumbs.db
 .env
 .vercel
 data-demo/
+data-demo-tests/
+test-results/
+playwright-report/

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Confirm, useToast } from "./ui";
 import { I } from "./icons";
 import { pve } from "../lib/api";
+import { usePermission } from "../lib/permissions";
 
 export interface GuestRef { node: string; type: "qemu" | "lxc"; vmid: number; name: string; status: string }
 
@@ -25,6 +26,8 @@ export function GuestActions({ g, onChange, full, size }: { g: GuestRef; onChang
   }
 
   const running = g.status === "running";
+  const { allowed, loading } = usePermission(`/vms/${g.vmid}`, "VM.PowerMgmt");
+  if (!allowed && !loading) return null; // pas le droit : on masque les boutons d'alimentation
   return (
     <span className="btn-group" onClick={(e) => e.stopPropagation()}>
       {!running && <Button size={size} variant={full ? "primary" : "default"} icon={<I.play />} busy={busy === "start"} onClick={() => act("start")}>Démarrer</Button>}

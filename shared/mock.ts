@@ -31,6 +31,7 @@ interface Guest {
   firewall: boolean;
   description: string;
   snapshots: { name: string; description: string; snaptime: number }[];
+  pool?: string;
 }
 
 interface Task {
@@ -53,6 +54,19 @@ interface State {
 }
 
 const g = globalThis as unknown as { __myproxmoxMock?: State };
+
+/** Tous les privilèges de Proxmox VE 8 (le compte démo les a tous sur « / »). */
+export const PVE_PRIVS = [
+  "Datastore.Allocate", "Datastore.AllocateSpace", "Datastore.AllocateTemplate", "Datastore.Audit",
+  "Group.Allocate", "Mapping.Audit", "Mapping.Modify", "Mapping.Use", "Permissions.Modify",
+  "Pool.Allocate", "Pool.Audit", "Realm.Allocate", "Realm.AllocateUser",
+  "SDN.Allocate", "SDN.Audit", "SDN.Use", "Sys.AccessNetwork", "Sys.Audit", "Sys.Console", "Sys.Incoming",
+  "Sys.Modify", "Sys.PowerMgmt", "Sys.Syslog", "User.Modify",
+  "VM.Allocate", "VM.Audit", "VM.Backup", "VM.Clone", "VM.Config.CDROM", "VM.Config.CPU", "VM.Config.Cloudinit",
+  "VM.Config.Disk", "VM.Config.HWType", "VM.Config.Memory", "VM.Config.Network", "VM.Config.Options",
+  "VM.Console", "VM.Migrate", "VM.Monitor", "VM.PowerMgmt", "VM.Snapshot", "VM.Snapshot.Rollback",
+];
+const ALL_PRIVS = Object.fromEntries(PVE_PRIVS.map((p) => [p, 1]));
 
 function mac(vmid: number) {
   return `BC:24:11:${(vmid % 256).toString(16).padStart(2, "0").toUpperCase()}:4E:${(vmid * 7 % 256).toString(16).padStart(2, "0").toUpperCase()}`;
@@ -80,6 +94,7 @@ function init(): State {
     guest(107, "docker-host", "qemu", true, 4, 8192, 100, "docker", { onboot: 1 }),
     guest(108, "uptime-kuma", "lxc", false, 1, 512, 4, "infra", { onboot: 1, started: 0 }),
   ];
+  for (const x of guests) x.pool = /infra|dns|securite/.test(x.tags) ? "infra" : /lab/.test(x.tags) ? "lab" : /media|cloud/.test(x.tags) ? "maison" : undefined;
   guests[0].snapshots = [{ name: "avant-maj", description: "Avant mise à jour Pi-hole v6", snaptime: t - 52 * DAY }];
   guests[3].snapshots = [{ name: "propre", description: "Installation fraîche", snaptime: t - 90 * DAY }];
   const backup = (vmid: number, type: string, daysAgo: number, size: number) => {
@@ -152,7 +167,7 @@ function resource(x: Guest) {
   const run = x.status === "running";
   if (run) x.cpu = wobble(x.cpu);
   return {
-    id: `${x.type}/${x.vmid}`, type: x.type, node: NODE, vmid: x.vmid, name: x.name, status: x.status, tags: x.tags,
+    id: `${x.type}/${x.vmid}`, type: x.type, node: NODE, vmid: x.vmid, name: x.name, status: x.status, tags: x.tags, pool: x.pool,
     cpu: run ? x.cpu : 0, maxcpu: x.cores, mem: run ? Math.round(x.memory * MB * (0.32 + x.cpu)) : 0, maxmem: x.memory * MB,
     disk: x.type === "lxc" ? Math.round(x.disk * GB * (0.25 + (x.vmid % 5) / 10)) : 0, maxdisk: x.disk * GB,
     uptime: run ? now() - x.started : 0, netin: run ? x.vmid * 1.7e7 : 0, netout: run ? x.vmid * 6e6 : 0,
@@ -237,7 +252,13 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   if (route === "GET /version") return { version: "8.4.1", release: "8.4", repoid: "2a5fa54a" };
   if (route === "GET /access/domains") return [{ realm: "pam", type: "pam", comment: "Linux PAM standard authentication" }, { realm: "pve", type: "pve", comment: "Proxmox VE authentication server", default: 1 }];
   if (route === "POST /access/ticket") return { ticket: "PVE:demo@pve:DEMO", CSRFPreventionToken: "demo", username: String(p.username ?? "demo@pve") };
-  if (route === "GET /access/permissions") return { "/": { "Sys.Modify": 1, "Sys.Audit": 1, "VM.Audit": 1, "VM.PowerMgmt": 1 } };
+  if (route === "GET /access/permissions") {
+    // Le compte démo est administrateur : tous les droits partout
+    const paths = ["/", "/vms", "/storage", "/nodes", "/pool", "/access", "/sdn", "/mapping", ...s.guests.map((x) => `/vms/${x.vmid}`), `/nodes/${NODE}`];
+    const all = Object.fromEntries(paths.map((x) => [x, ALL_PRIVS]));
+    return p.path ? { [String(p.path)]: ALL_PRIVS } : all;
+  }
+  if (route === "GET /pools") return [...new Set(s.guests.map((x) => x.pool).filter(Boolean))].map((poolid) => ({ poolid, comment: poolid === "infra" ? "Services de base" : "" }));
   if (route === "GET /access/users") {
     return [
       { userid: "root@pam", enable: 1, expire: 0, "realm-type": "pam", tfa_locked_until: undefined, tokens: [] },
@@ -262,10 +283,12 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
       { id: `node/${NODE}`, type: "node", node: NODE, status: "online", level: "", ...n },
       ...s.guests.map(resource),
       ...storages().map((st) => ({ id: `storage/${NODE}/${st.storage}`, type: "storage", node: NODE, storage: st.storage, plugintype: st.type, status: "available", disk: st.used, maxdisk: st.total, content: st.content, shared: st.shared })),
+      ...[...new Set(s.guests.map((x) => x.pool).filter(Boolean))].map((pool) => ({ id: `/pool/${pool}`, type: "pool", pool })),
     ];
     if (p.type === "vm") return list.filter((r) => r.type === "qemu" || r.type === "lxc");
     if (p.type === "storage") return list.filter((r) => r.type === "storage");
     if (p.type === "node") return list.filter((r) => r.type === "node");
+    if (p.type === "pool") return list.filter((r) => r.type === "pool");
     return list;
   }
   if (route === "GET /cluster/tasks") return s.tasks.slice(0, 60).map(({ log, ...t }) => t);

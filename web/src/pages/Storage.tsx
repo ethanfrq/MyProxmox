@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button, Confirm, Empty, Field, Meter, Notice, PageHead, Panel, Tabs, useToast } from "../components/ui";
 import { I } from "../components/icons";
 import { api, pve, usePoll } from "../lib/api";
@@ -10,7 +11,9 @@ export function Storage() {
   const nodes = usePoll(() => pve.get<any[]>("/nodes"), 0);
   const node = nodes.data?.[0]?.node;
   const storages = usePoll(() => api<any[]>("/api/insights/storage"), 60000);
-  const [sel, setSel] = useState("");
+  const [params] = useSearchParams();
+  const [sel, setSel] = useState(params.get("storage") ?? "");
+  useEffect(() => { if (params.get("storage")) setSel(params.get("storage")!); }, [params]);
   useEffect(() => { if (!sel && storages.data?.[0]) setSel(storages.data[0].storage); }, [storages.data, sel]);
   const current = (storages.data ?? []).find((s) => s.storage === sel);
 
