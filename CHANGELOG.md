@@ -10,6 +10,7 @@
 - Console intégrée : noVNC pour les VM, xterm.js pour les conteneurs, relais WebSocket authentifié `/api/console`
 - Nœud à parité avec Proxmox : alimentation avec double confirmation, tout démarrer / arrêter / migrer, shell intégré, réseau (ponts, bonds, VLAN, OVS) avec diff de /etc/network/interfaces avant application, DNS, hosts, fuseau, certificats personnalisés et ACME (comptes, plugins DNS), mises à jour et dépôts APT, disques (SMART, GPT, effacement, LVM, LVM-thin, répertoires, assistant ZFS), Ceph, services, journal en direct, tâches, abonnement, pare-feu
 - Datacenter à parité avec Proxmox : cluster (création, jonction), options, stockages de tous types avec recherche des partages, sauvegardes planifiées complètes, réplication, permissions (utilisateurs, groupes, pools, rôles personnalisés, ACL en arbre, domaines, 2FA, jetons), haute disponibilité, SDN, ACME, métriques, notifications, mappings, pare-feu et groupes de sécurité
+- Stockage et contenu : envoi de fichiers depuis le navigateur (relayé en flux vers Proxmox, barre de progression, somme de contrôle), téléchargement depuis une adresse avec vérification, disques orphelins, rétention simulée avant application, suppression groupée de sauvegardes, résumé PBS (espace, déduplication, vérifications), graphe d'occupation sur 1 jour à 1 an
 - Assistants de création complets (VM et conteneur), création depuis un modèle, mode simple conservé
 - Actions groupées : redémarrage, sauvegarde, migration, ajout et retrait de tags
 - Tests de bout en bout Playwright en mode démo

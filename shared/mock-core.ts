@@ -254,8 +254,15 @@ export function init(): State {
         { volid: "local:iso/ubuntu-24.04.1-live-server-amd64.iso", content: "iso", format: "iso", size: 2.6 * GB, ctime: t - 9 * DAY },
         { volid: "local:iso/virtio-win-0.1.262.iso", content: "iso", format: "iso", size: 708 * MB, ctime: t - 120 * DAY },
         { volid: "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst", content: "vztmpl", format: "tzst", size: 120 * MB, ctime: t - 30 * DAY },
+        { volid: "local:snippets/cloud-init-docker.yaml", content: "snippets", format: "snippet", size: 1830, ctime: t - 15 * DAY },
+        { volid: "local:snippets/hookscript.sh", content: "snippets", format: "snippet", size: 912, ctime: t - 60 * DAY },
       ],
-      "local-lvm": [],
+      // Volumes orphelins : leur machine n'existe plus, ou ils ne sont plus dans sa configuration
+      "local-lvm": [
+        { volid: "local-lvm:vm-199-disk-0", content: "images", format: "raw", size: 32 * GB, vmid: 199, ctime: t - 200 * DAY },
+        { volid: "local-lvm:vm-101-disk-7", content: "images", format: "raw", size: 8 * GB, vmid: 101, ctime: t - 40 * DAY },
+        { volid: "local-lvm:subvol-150-disk-0", content: "rootdir", format: "subvol", size: 4 * GB, vmid: 150, ctime: t - 120 * DAY },
+      ],
       pbs: [pbsSnap(101, "qemu", 1, 32 * GB), pbsSnap(101, "qemu", 7, 32 * GB), pbsSnap(107, "qemu", 2, 100 * GB), pbsSnap(102, "lxc", 3, 40 * GB), pbsSnap(101, "qemu", 30, 32 * GB)],
       "backup-nas": [
         backup(100, "lxc", 1, 410 * MB), backup(100, "lxc", 8, 402 * MB),
@@ -357,7 +364,7 @@ export function storages(node = NODE) {
 }
 
 export function rrd(kind: "node" | "guest" | "storage", x?: Guest, timeframe = "hour", storage?: string) {
-  const step = timeframe === "week" ? 1800 : timeframe === "day" ? 600 : 60;
+  const step = timeframe === "year" ? 450000 : timeframe === "month" ? 37000 : timeframe === "week" ? 1800 * 4.8 : timeframe === "day" ? 1230 : 60;
   const count = 70;
   const pts: Any[] = [];
   const ns = kind === "node" ? nodeStatus() : null;

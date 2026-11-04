@@ -656,3 +656,10 @@ a.user-chip:hover { color: var(--panel); }
   .dc-nav a { border-left: 0; border-bottom: 3px solid transparent; padding: 8px 12px; }
   .dc-nav a.active { border-bottom-color: var(--orange); }
 }
+/* ── Stockage ─────────────────────────────────────────────── */
+.storage-card { text-align: left; padding: 16px; cursor: pointer; font: inherit; color: inherit; }
+.storage-card.sel { border-color: var(--orange); outline: 1px solid var(--orange); }
+.storage-card:focus-visible { outline: 2px solid var(--orange); }
+.upload-progress { position: relative; height: 22px; background: var(--line-2); }
+.upload-progress span { position: absolute; inset: 0 auto 0 0; background: var(--orange); transition: width .2s; }
+.upload-progress b { position: relative; display: block; text-align: center; font-size: 12px; line-height: 22px; }

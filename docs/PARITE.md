@@ -14,13 +14,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|--:|--:|--:|--:|---|
 | [Datacenter](#datacenter) | 203 | 106 | 85 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 29 | 22 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
+| [Nœud](#nœud) | 173 | 98 | 53 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
-| [Stockage](#stockage) | 33 | 18 | 13 | 2 | 3 (occupation), 7 |
+| [Stockage](#stockage) | 33 | 23 | 8 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 28 | 14 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 5 | 2 | 0 | 6 |
-| **Total** | **680** | **382** | **237** | **61** | |
+| **Total** | **680** | **388** | **231** | **61** | |
 
 ## Phases
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 97 faits, 54 à faire, 22 hors périmètre.
+173 points d'entrée : 98 faits, 53 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -650,7 +650,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/query-url-metadata` | Query metadata of an URL: file size, file name and mime type. | Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/query-url-metadata` | Query metadata of an URL: file size, file name and mime type. | Sys.Audit + Sys.Modify sur / ou Sys.AccessNetwork sur /nodes/{node} | Fait |
 
 ### Nœud : replication
 
@@ -1224,7 +1224,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Stockage
 
-33 points d'entrée : 18 faits, 13 à faire, 2 hors périmètre.
+33 points d'entrée : 23 faits, 8 à faire, 2 hors périmètre.
 
 ### Stockage : (racine)
 
@@ -1241,7 +1241,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | POST | `/nodes/{node}/storage/{storage}/content` | Allocate disk images. | Datastore.AllocateSpace sur /storage/{storage} | À faire |
 | GET | `/nodes/{node}/storage/{storage}/content/{volume}` | Get volume attributes | You need read access for the volume. | À faire |
 | POST | `/nodes/{node}/storage/{storage}/content/{volume}` | Copy a volume. This is experimental code - do not use. | non précisée | À faire |
-| PUT | `/nodes/{node}/storage/{storage}/content/{volume}` | Update volume attributes | You need read access for the volume. | À faire |
+| PUT | `/nodes/{node}/storage/{storage}/content/{volume}` | Update volume attributes | You need read access for the volume. | Fait |
 | DELETE | `/nodes/{node}/storage/{storage}/content/{volume}` | Delete volume | You need 'Datastore.Allocate' privilege on the storage (or 'Datastore.AllocateSpace' for backup volumes if you have VM.Backup privilege on the VM). | Fait |
 
 ### Stockage : définitions
@@ -1289,8 +1289,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/storage/{storage}/prunebackups` | Get prune information for backups. NOTE: this is only a preview and might not be what a subsequent prune call does if backups are removed/added in the meantime. | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | À faire |
-| DELETE | `/nodes/{node}/storage/{storage}/prunebackups` | Prune backups. Only those using the standard naming scheme are considered. | You need the 'Datastore.Allocate' privilege on the storage (or if a VM ID is specified, 'Datastore.AllocateSpace' and 'VM.Backup' for the VM). | À faire |
+| GET | `/nodes/{node}/storage/{storage}/prunebackups` | Get prune information for backups. NOTE: this is only a preview and might not be what a subsequent prune call does if backups are removed/added in the meantime. | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | Fait |
+| DELETE | `/nodes/{node}/storage/{storage}/prunebackups` | Prune backups. Only those using the standard naming scheme are considered. | You need the 'Datastore.Allocate' privilege on the storage (or if a VM ID is specified, 'Datastore.AllocateSpace' and 'VM.Backup' for the VM). | Fait |
 
 ### Stockage : rrd
 
@@ -1321,13 +1321,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/storage/{storage}/status` | Read storage status. | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | À faire |
+| GET | `/nodes/{node}/storage/{storage}/status` | Read storage status. | Datastore.Audit ou Datastore.AllocateSpace sur /storage/{storage} | Fait |
 
 ### Stockage : upload
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| POST | `/nodes/{node}/storage/{storage}/upload` | Upload templates, ISO images, OVAs and VM images. | Datastore.AllocateTemplate sur /storage/{storage} | À faire |
+| POST | `/nodes/{node}/storage/{storage}/upload` | Upload templates, ISO images, OVAs and VM images. | Datastore.AllocateTemplate sur /storage/{storage} | Fait |
 
 ## Accès
 

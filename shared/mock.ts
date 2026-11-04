@@ -302,9 +302,55 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
     return addTask("imgdel", volid);
   }
   if (/^POST \/storage\/[^/]+\/download-url$/.test(r)) {
-    const kind = p.content === "vztmpl" ? "vztmpl" : "iso";
+    const kind = ["vztmpl", "import"].includes(String(p.content)) ? String(p.content) : "iso";
+    const lines = [`downloading ${p.url} to /var/lib/vz/template/${kind}/${p.filename}.tmp`, "100% done"];
+    if (p.checksum) {
+      if (String(p.checksum).startsWith("0000")) return addTask("download", String(p.filename), [...lines, `calculating checksum (${p["checksum-algorithm"]})...`, "checksum mismatch: got 'a1b2c3', expected '0000…'"], "checksum mismatch", node);
+      lines.push(`calculating checksum (${p["checksum-algorithm"]})...`, "checksum verified");
+    }
     (s.content[rest[1]] ??= []).push({ volid: `${rest[1]}:${kind}/${p.filename}`, content: kind, format: kind, size: 700 * MB, ctime: now() });
-    return addTask("download", String(p.filename), [`downloading ${p.url}`, "download of '...' finished"]);
+    return addTask("download", String(p.filename), [...lines, `download of '${p.filename}' finished`], "OK", node);
+  }
+  if (/^POST \/storage\/[^/]+\/upload$/.test(r)) {
+    const kind = String(p.content ?? "iso");
+    if (!["iso", "vztmpl", "import", "snippets"].includes(kind)) fail(400, "content: type de contenu non accepté pour un envoi");
+    const name = String(p.filename ?? "fichier").split(/[\\/]/).pop()!;
+    (s.content[rest[1]] ??= []).push({ volid: `${rest[1]}:${kind}/${name}`, content: kind, format: kind === "iso" ? "iso" : kind === "snippets" ? "snippet" : "tzst", size: Number(p.size ?? 0), ctime: now() });
+    return addTask("imgcopy", name, [`starting file import from: /var/tmp/pveupload-demo`, `target node: ${node}`, `file size is: ${p.size}`, `command: cp -- /var/tmp/pveupload-demo /var/lib/vz/template/${kind}/${name}`, "finished file import successfully"], "OK", node);
+  }
+  if (r === "GET /query-url-metadata") {
+    const name = String(p.url ?? "").split("/").pop()?.split("?")[0] || "fichier.iso";
+    if (!/^https?:\/\//.test(String(p.url))) fail(400, "url: adresse invalide");
+    return { filename: name, size: /ubuntu/.test(name) ? 2.6 * GB : 650 * MB, mimetype: "application/x-iso9660-image" };
+  }
+  if (/^GET \/storage\/[^/]+\/status$/.test(r)) {
+    const st = storages(node).find((x) => x.storage === rest[1]) ?? fail(500, `storage '${rest[1]}' does not exist`);
+    return { ...st, enabled: 1, active: 1 };
+  }
+  // Rétention : simulation (GET) puis application (DELETE)
+  if (/^(GET|DELETE) \/storage\/[^/]+\/prunebackups$/.test(r)) {
+    const list = (s.content[rest[1]] ?? []).filter((c) => c.content === "backup" && (!p.vmid || Number(c.vmid) === Number(p.vmid)));
+    const keep = new Set<string>();
+    const byVm = new Map<number, Any[]>();
+    for (const c of list) byVm.set(Number(c.vmid), [...(byVm.get(Number(c.vmid)) ?? []), c]);
+    for (const backups of byVm.values()) {
+      backups.sort((a, b) => b.ctime - a.ctime);
+      backups.slice(0, Number(p["keep-last"] ?? 0)).forEach((c) => keep.add(c.volid));
+      for (const [k, fmt] of [["keep-daily", (d: Date) => d.toISOString().slice(0, 10)], ["keep-weekly", (d: Date) => `${d.getUTCFullYear()}-${Math.floor((d.getTime() / 864e5 + 4) / 7)}`], ["keep-monthly", (d: Date) => d.toISOString().slice(0, 7)], ["keep-yearly", (d: Date) => d.toISOString().slice(0, 4)]] as [string, (d: Date) => string][]) {
+        const n = Number(p[k] ?? 0);
+        const seen = new Set<string>();
+        for (const c of backups) {
+          if (seen.size >= n) break;
+          const key = fmt(new Date(c.ctime * 1000));
+          if (!seen.has(key)) { seen.add(key); keep.add(c.volid); }
+        }
+      }
+    }
+    const marked = list.map((c) => ({ volid: c.volid, vmid: c.vmid, ctime: c.ctime, type: String(c.volid).includes("qemu") || String(c.volid).includes("/vm/") ? "qemu" : "lxc", mark: c.protected ? "protected" : keep.has(c.volid) ? "keep" : "remove" }));
+    if (method === "GET") return marked;
+    const drop = new Set(marked.filter((m) => m.mark === "remove").map((m) => m.volid));
+    s.content[rest[1]] = (s.content[rest[1]] ?? []).filter((c) => !drop.has(c.volid));
+    return addTask("prunebackups", rest[1], [`supprime ${drop.size} sauvegarde(s)`], "OK", node);
   }
   if (r === "GET /aplinfo") {
     return [

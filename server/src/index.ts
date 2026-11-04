@@ -72,3 +72,5 @@ const server = app.listen(PORT, HOST, () => {
 });
 // Consoles (noVNC et xterm.js) : relais WebSocket authentifié
 attachConsole(server);
+// Les gros téléversements (ISO de plusieurs Go) peuvent durer : une heure au plus
+server.requestTimeout = 3600_000;

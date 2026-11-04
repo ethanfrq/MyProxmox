@@ -1,33 +1,53 @@
+// Stockage : occupation de chaque stockage, puis pour le stockage choisi son résumé
+// (graphe 1 jour à 1 an), son contenu par type, ses disques orphelins et l'ajout de fichiers.
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, Confirm, Empty, Field, Meter, Notice, PageHead, Panel, Tabs, useToast } from "../components/ui";
-import { I } from "../components/icons";
+import { Meter, Notice, PageHead, Tabs } from "../components/ui";
 import { api, pve, usePoll } from "../lib/api";
-import { bytes, date } from "../../../shared/format";
+import { bytes } from "../../../shared/format";
+import { StorageSummary } from "./storage/Summary";
+import { StorageBackups, StorageFiles, StorageOrphans } from "./storage/Content";
+import { StorageAdd } from "./storage/Upload";
 
-const CONTENT: Record<string, string> = { iso: "ISO", vztmpl: "Modèles CT", backup: "Sauvegardes", images: "Disques VM", rootdir: "Disques CT", snippets: "Snippets" };
+const CONTENT: Record<string, string> = { iso: "ISO", vztmpl: "Modèles", backup: "Sauvegardes", images: "Disques VM", rootdir: "Disques CT", snippets: "Snippets", import: "Import" };
+type Tab = "resume" | "iso" | "vztmpl" | "snippets" | "import" | "backup" | "orphelins" | "ajouter";
 
 export function Storage() {
+  const [params, setParams] = useSearchParams();
   const nodes = usePoll(() => pve.get<any[]>("/nodes"), 0);
-  const node = nodes.data?.[0]?.node;
+  const node = params.get("node") || nodes.data?.find((n) => n.status === "online")?.node || "";
   const storages = usePoll(() => api<any[]>("/api/insights/storage"), 60000);
-  const [params] = useSearchParams();
-  const [sel, setSel] = useState(params.get("storage") ?? "");
-  useEffect(() => { if (params.get("storage")) setSel(params.get("storage")!); }, [params]);
-  useEffect(() => { if (!sel && storages.data?.[0]) setSel(storages.data[0].storage); }, [storages.data, sel]);
-  const current = (storages.data ?? []).find((s) => s.storage === sel);
+  const defs = usePoll(() => pve.get<any[]>("/storage").catch(() => []), 0);
+  const list = (storages.data ?? []).filter((s) => !node || s.node === node);
+  const sel = params.get("storage") || list[0]?.storage || "";
+  const current = list.find((s) => s.storage === sel);
+  const tab = (params.get("onglet") as Tab) || "resume";
+  const [tick, setTick] = useState(0);
+  const set = (k: string, v: string) => setParams((p) => { const n = new URLSearchParams(p); n.set(k, v); if (k === "storage") n.delete("onglet"); return n; }, { replace: true });
+  useEffect(() => { if (current && tab !== "resume" && tab !== "ajouter" && tab !== "orphelins" && !String(current.content).includes(tab)) set("onglet", "resume"); }, [current?.storage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const kinds = current ? String(current.content).split(",") : [];
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "resume", label: "Résumé" },
+    ...(["iso", "vztmpl", "snippets", "import", "backup"] as Tab[]).filter((k) => kinds.includes(k)).map((k) => ({ id: k, label: CONTENT[k] })),
+    ...(kinds.includes("images") || kinds.includes("rootdir") ? [{ id: "orphelins" as Tab, label: "Disques orphelins" }] : []),
+    ...(kinds.some((k) => ["iso", "vztmpl", "snippets", "import"].includes(k)) ? [{ id: "ajouter" as Tab, label: "Ajouter" }] : []),
+  ];
 
   return (
     <>
-      <PageHead title="Stockage" sub="Occupation, contenu et estimation de remplissage (tendance sur 7 jours)" />
+      <PageHead
+        title="Stockage"
+        sub="Occupation, contenu, envois, disques orphelins et tendance de remplissage"
+        actions={(nodes.data?.length ?? 0) > 1 && (
+          <select className="select input" aria-label="Nœud" style={{ width: 180 }} value={node} onChange={(e) => set("node", e.target.value)}>
+            {nodes.data!.map((n) => <option key={n.node}>{n.node}</option>)}
+          </select>
+        )}
+      />
       <div className="grid g3" style={{ marginBottom: 16 }}>
-        {(storages.data ?? []).map((s) => (
-          <button
-            key={s.storage}
-            className="panel"
-            onClick={() => setSel(s.storage)}
-            style={{ textAlign: "left", padding: 16, cursor: "pointer", font: "inherit", borderColor: sel === s.storage ? "var(--orange)" : undefined, outline: sel === s.storage ? "1px solid var(--orange)" : undefined }}
-          >
+        {list.map((s) => (
+          <button key={s.storage} type="button" className={`panel storage-card ${sel === s.storage ? "sel" : ""}`} aria-pressed={sel === s.storage} onClick={() => set("storage", s.storage)}>
             <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
               <strong>{s.storage}</strong>
               <span className="tag">{s.type}</span>
@@ -43,137 +63,16 @@ export function Storage() {
         ))}
       </div>
       {storages.error && <Notice kind="error">{storages.error}</Notice>}
-      {node && current && <StorageContent key={current.storage} node={node} st={current} />}
-    </>
-  );
-}
-
-function StorageContent({ node, st }: { node: string; st: any }) {
-  const { watch, toast } = useToast();
-  const kinds = String(st.content).split(",").filter((c) => CONTENT[c]);
-  const [kind, setKind] = useState(kinds[0] ?? "iso");
-  const list = usePoll(() => pve.get<any[]>(`/nodes/${node}/storage/${st.storage}/content`, { content: kind }), 0, [kind]);
-  const [del, setDel] = useState<string | null>(null);
-
-  return (
-    <div className="stack">
-      <Panel
-        title={`Contenu de ${st.storage}`}
-        right={<Button size="sm" icon={<I.refresh />} onClick={list.refresh}>Actualiser</Button>}
-        pad={false}
-      >
-        <div style={{ padding: "0 16px" }}>
-          <Tabs value={kind} onChange={setKind} tabs={kinds.map((k) => ({ id: k, label: CONTENT[k] }))} />
-        </div>
-        {(list.data ?? []).length ? (
-          <table className="table">
-            <thead><tr><th>Fichier</th><th>Machine</th><th>Date</th><th className="num">Taille</th><th className="actions" /></tr></thead>
-            <tbody>
-              {(list.data ?? []).map((c) => (
-                <tr key={c.volid}>
-                  <td className="mono small">{c.volid.split(/[:/]/).pop()}</td>
-                  <td className="muted">{c.vmid ?? "—"}</td>
-                  <td className="small muted">{date(c.ctime)}</td>
-                  <td className="num">{bytes(c.size)}</td>
-                  <td className="actions">
-                    {(kind === "iso" || kind === "vztmpl" || kind === "backup") && (
-                      <Button size="sm" variant="danger" icon={<I.trash />} aria-label="Supprimer" onClick={() => setDel(c.volid)} />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <Empty>{list.loading ? "Chargement…" : "Rien ici."}</Empty>}
-      </Panel>
-
-      <div className="grid g2">
-        {kinds.includes("iso") && <DownloadIso node={node} storage={st.storage} onDone={list.refresh} />}
-        {kinds.includes("vztmpl") && <Templates node={node} storage={st.storage} onDone={list.refresh} />}
-      </div>
-
-      {del && (
-        <Confirm
-          title="Supprimer ce fichier ?"
-          danger
-          confirmLabel="Supprimer"
-          onConfirm={async () => {
-            try {
-              const upid = await pve.del(`/nodes/${node}/storage/${st.storage}/content/${encodeURIComponent(del)}`);
-              if (typeof upid === "string" && upid.startsWith("UPID")) watch(node, upid, "Suppression", list.refresh); else list.refresh();
-            } catch (e) { toast((e as Error).message, "error"); }
-          }}
-          onClose={() => setDel(null)}
-        >
-          <p className="mono small">{del}</p>
-        </Confirm>
+      {node && current && (
+        <>
+          <Tabs value={tab} onChange={(t) => set("onglet", t)} tabs={tabs} />
+          {tab === "resume" && <StorageSummary key={current.storage} node={node} st={current} def={(defs.data ?? []).find((d) => d.storage === current.storage)} />}
+          {(tab === "iso" || tab === "vztmpl" || tab === "snippets" || tab === "import") && <StorageFiles key={`${current.storage}${tab}${tick}`} node={node} st={current} kind={tab} />}
+          {tab === "backup" && <StorageBackups key={current.storage} node={node} st={current} />}
+          {tab === "orphelins" && <StorageOrphans key={current.storage} node={node} st={current} />}
+          {tab === "ajouter" && <StorageAdd node={node} st={current} onDone={() => { setTick((t) => t + 1); storages.refresh(); }} />}
+        </>
       )}
-    </div>
-  );
-}
-
-function DownloadIso({ node, storage, onDone }: { node: string; storage: string; onDone: () => void }) {
-  const { watch, toast } = useToast();
-  const [url, setUrl] = useState("");
-  const [filename, setFilename] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    try { const n = new URL(url).pathname.split("/").pop(); if (n) setFilename(n); } catch { /* URL incomplète */ }
-  }, [url]);
-  return (
-    <Panel title="Ajouter une ISO depuis une adresse web">
-      <div className="stack">
-        <p className="small muted" style={{ margin: 0 }}>Proxmox télécharge le fichier lui-même : rien ne transite par ton PC.</p>
-        <Field label="Adresse de l'ISO"><input className="input mono" placeholder="https://cdimage.debian.org/…/debian-12-amd64-netinst.iso" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
-        <Field label="Nom du fichier"><input className="input mono" value={filename} onChange={(e) => setFilename(e.target.value)} /></Field>
-        <div>
-          <Button
-            variant="primary" icon={<I.download />} busy={busy} disabled={!url || !filename.endsWith(".iso")}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                const upid = await pve.post(`/nodes/${node}/storage/${storage}/download-url`, { content: "iso", url, filename });
-                watch(node, upid, `Téléchargement de ${filename}`, onDone);
-                setUrl(""); setFilename("");
-              } catch (e) { toast((e as Error).message, "error"); } finally { setBusy(false); }
-            }}
-          >
-            Télécharger
-          </Button>
-        </div>
-      </div>
-    </Panel>
-  );
-}
-
-function Templates({ node, storage, onDone }: { node: string; storage: string; onDone: () => void }) {
-  const { watch, toast } = useToast();
-  const apl = usePoll(() => pve.get<any[]>(`/nodes/${node}/aplinfo`), 0);
-  const [q, setQ] = useState("");
-  const list = (apl.data ?? []).filter((t) => t.section === "system").filter((t) => !q || `${t.template} ${t.headline}`.toLowerCase().includes(q.toLowerCase()));
-  return (
-    <Panel title="Modèles de conteneur officiels" right={<input className="input" style={{ width: 160, height: 28 }} placeholder="Filtrer" value={q} onChange={(e) => setQ(e.target.value)} />} pad={false}>
-      <div style={{ maxHeight: 320, overflow: "auto" }}>
-        {list.length ? (
-          <table className="table">
-            <tbody>
-              {list.map((t) => (
-                <tr key={t.template}>
-                  <td><strong>{t.headline ?? t.os}</strong><div className="mono small muted">{t.template}</div></td>
-                  <td className="actions">
-                    <Button size="sm" icon={<I.download />} onClick={async () => {
-                      try {
-                        const upid = await pve.post(`/nodes/${node}/aplinfo`, { storage, template: t.template });
-                        watch(node, upid, `Téléchargement de ${t.os}`, onDone);
-                      } catch (e) { toast((e as Error).message, "error"); }
-                    }}>Télécharger</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <Empty>{apl.loading ? "Chargement…" : "Aucun modèle (lance « pveam update » dans le shell Proxmox)."}</Empty>}
-      </div>
-    </Panel>
+    </>
   );
 }

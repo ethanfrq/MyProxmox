@@ -78,7 +78,7 @@ export function Backups({ ctx }: { ctx: GuestCtx }) {
 
       {now && <BackupNow ctx={ctx} onClose={() => setNow(false)} onDone={list.refresh} />}
       {restore && <RestoreDialog ctx={ctx} b={restore} onClose={() => setRestore(null)} onRestored={(vmid) => { if (vmid !== ctx.vmid) navigate(`/machines/${ctx.node}/${ctx.type}/${vmid}`); else ctx.refresh(); }} />}
-      {files && <FileRestore ctx={ctx} b={files} onClose={() => setFiles(null)} />}
+      {files && <FileRestore node={ctx.node} b={files} onClose={() => setFiles(null)} />}
       {notes && (
         <Modal title="Notes de la sauvegarde" onClose={() => setNotes(null)}>
           <Form
@@ -196,7 +196,8 @@ function RestoreDialog({ ctx, b, onClose, onRestored }: { ctx: GuestCtx; b: Back
 // ── Restauration de fichiers isolés (Proxmox Backup Server) ───────
 interface Entry { filepath: string; text: string; type: string; leaf: number; size?: number; mtime?: number }
 
-function FileRestore({ ctx, b, onClose }: { ctx: GuestCtx; b: Backup; onClose: () => void }) {
+export function FileRestore({ node, b, onClose }: { node: string; b: { volid: string; storage: string; ctime: number }; onClose: () => void }) {
+  const ctx = { node };
   const [path, setPath] = useState<Entry[]>([]);
   const cur = path.at(-1)?.filepath ?? "/";
   const list = usePoll(() => pve.get<Entry[]>(`/nodes/${ctx.node}/storage/${b.storage}/file-restore/list`, { volume: b.volid, filepath: cur }), 0, [cur]);

@@ -55,3 +55,9 @@ test("captures du datacenter", async ({ page }) => {
   await shot(page, "/datacenter/permissions", "datacenter-permissions");
   await shot(page, "/datacenter/sauvegardes", "datacenter-sauvegardes");
 });
+
+test("captures du stockage", async ({ page }) => {
+  await loginProxmox(page);
+  await shot(page, "/stockage?node=pve&storage=backup-nas&onglet=resume", "stockage");
+  await shot(page, "/stockage?node=pve&storage=local-lvm&onglet=orphelins", "stockage-orphelins");
+});

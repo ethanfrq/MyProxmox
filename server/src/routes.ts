@@ -6,7 +6,7 @@ import {
   DEMO, PRIVATE_RANGES, ROOT, clearNotifications, getActivity, getConfig, getNotifications, logActivity,
   markRead, newSecret, saveConfig, sameHash, sha256, version,
 } from "./config";
-import { PveError, createServiceToken, login, serviceCall, ticketCall, ticketDownload } from "./pve";
+import { PveError, createServiceToken, login, serviceCall, ticketCall, ticketDownload, ticketUpload } from "./pve";
 import { request } from "./http";
 import { clientIp, validCidr } from "./ipfilter";
 import { addStream, broadcast, clearCookie, createSession, destroySession, destroyUserSessions, getSession, requireAdmin, requireSession, setCookie } from "./sessions";
@@ -312,6 +312,22 @@ api.get(/^\/pve-raw\/(.+)$/, async (req, res) => {
   } catch (e) {
     const status = (e as { status?: number }).status ?? 500;
     res.status(status).json({ error: (e as Error).message });
+  }
+});
+
+// Téléversement d'ISO, de modèles et de snippets : relayé en flux vers Proxmox
+api.post("/upload/:node/:storage", async (req, res) => {
+  try {
+    if (req.session!.kind !== "proxmox") throw bad("Réservé aux comptes Proxmox.", 403);
+    const type = String(req.headers["content-type"] ?? "");
+    if (!type.startsWith("multipart/form-data")) throw bad("Envoi attendu au format multipart/form-data.", 400);
+    const { node, storage } = req.params as Record<string, string>;
+    const upid = await ticketUpload(req.session!.ticket, req.session!.csrf, node, storage, type, req.headers["content-length"] as string | undefined, req);
+    await logActivity({ actor: req.session!.username, action: "fichier téléversé", target: `${node}/${storage}`, result: "ok" });
+    res.json({ data: upid });
+  } catch (e) {
+    const status = (e as { status?: number }).status ?? 500;
+    if (!res.headersSent) res.status(status).json({ error: (e as Error).message });
   }
 });
 

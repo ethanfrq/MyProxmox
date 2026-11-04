@@ -103,3 +103,28 @@ export function requestRaw(target: Target, path: string, headers: Record<string,
     req.end();
   });
 }
+
+/**
+ * Envoie un flux (téléversement multipart) à Proxmox sans le charger en mémoire :
+ * le corps de la requête du navigateur est relayé tel quel, en-têtes compris.
+ */
+export function streamUpload(target: Target, path: string, headers: Record<string, string>, body: NodeJS.ReadableStream): Promise<any> {
+  const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}`);
+  return new Promise((resolve, reject) => {
+    const lib = url.protocol === "https:" ? https : http;
+    const req = lib.request(url, { method: "POST", headers, rejectUnauthorized: !target.insecureTls }, (res) => {
+      let text = "";
+      res.setEncoding("utf8");
+      res.on("data", (c) => (text += c));
+      res.on("end", () => {
+        let json: any = null;
+        try { json = JSON.parse(text); } catch { /* réponse non JSON */ }
+        if ((res.statusCode ?? 500) >= 400) reject(new PveError(res.statusCode ?? 500, String(json?.message ?? res.statusMessage ?? "envoi refusé").trim()));
+        else resolve(json?.data);
+      });
+    });
+    req.on("error", (e: NodeJS.ErrnoException) => reject(new PveError(502, HINTS[e.code ?? ""] ?? e.message)));
+    body.on("error", (e) => req.destroy(e as Error));
+    body.pipe(req);
+  });
+}

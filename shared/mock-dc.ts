@@ -46,7 +46,7 @@ function initDc(): Dc {
     cluster: { name: "maison", nodes: [{ name: NODE, nodeid: 1, votes: 1, ip: "10.0.1.101" }, { name: NODE2, nodeid: 2, votes: 1, ip: "10.0.1.102" }] },
     options: { keyboard: "fr", console: "html5", email_from: "proxmox@maison.lan", language: "fr", "mac_prefix": "BC:24:11", migration: "secure,network=10.0.2.0/24", "bwlimit": "migration=200000", "tag-style": "shape=circle,ordering=config", "next-id": "lower=100,upper=999999" },
     storage: [
-      { storage: "local", type: "dir", path: "/var/lib/vz", content: "iso,vztmpl,backup", shared: 0 },
+      { storage: "local", type: "dir", path: "/var/lib/vz", content: "iso,vztmpl,backup,snippets", shared: 0 },
       { storage: "local-lvm", type: "lvmthin", vgname: "pve", thinpool: "data", content: "images,rootdir" },
       { storage: "backup-nas", type: "nfs", server: "10.0.1.10", export: "/volume1/proxmox", path: "/mnt/pve/backup-nas", content: "backup", options: "vers=4.2", "prune-backups": "keep-daily=7,keep-weekly=4,keep-monthly=3" },
       { storage: "pbs", type: "pbs", server: "10.0.1.11", datastore: "homelab", username: "pve@pbs", fingerprint: "AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90", content: "backup", "prune-backups": "keep-last=3,keep-daily=14" },
