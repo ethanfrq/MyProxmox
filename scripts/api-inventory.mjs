@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 // Inventaire de l'API Proxmox VE et de ce que MyProxmox en couvre.
 //
-// Télécharge l'arbre de l'API (apidoc.js de l'API viewer officiel), cherche dans le code
-// les chemins déjà appelés, et écrit docs/PARITE.md.
+// Lit l'arbre de l'API (copie locale docs/api/apidoc.js de l'API viewer officiel), cherche
+// dans le code les chemins déjà appelés, et écrit docs/PARITE.md.
 //
-//   node scripts/api-inventory.mjs                       télécharge la doc en ligne
-//   node scripts/api-inventory.mjs --schema apidoc.js    utilise un fichier local
+//   node scripts/api-inventory.mjs                       utilise docs/api/apidoc.js
+//   node scripts/api-inventory.mjs --refresh             retélécharge docs/api/apidoc.js d'abord
+//   node scripts/api-inventory.mjs --schema apidoc.js    utilise un autre fichier local
 //   node scripts/api-inventory.mjs --out autre.md        change le fichier produit
 //
 // La colonne « MyProxmox » est recalculée à chaque lancement : relance le script à la fin
 // de chaque phase plutôt que d'éditer docs/PARITE.md à la main. Pour classer un point
 // d'entrée « Hors périmètre », ajoute-le dans HORS_PERIMETRE ci-dessous.
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +26,9 @@ const opt = (name) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const OUT = path.resolve(ROOT, opt("--out") ?? "docs/PARITE.md");
+const LOCAL = path.join(ROOT, "docs/api/apidoc.js");
+const REFRESH = args.includes("--refresh");
+let fetchedOn = null; // date de récupération de la doc, lue dans l'en-tête de la copie locale
 
 // ── Points d'entrée hors périmètre, choisis à la main ─────────────────
 // Clé : "MÉTHODE /chemin". Valeur : la raison, affichée dans la légende.
@@ -120,10 +124,16 @@ async function loadSchema() {
   if (file) {
     src = readFileSync(path.resolve(file), "utf8");
   } else {
-    const res = await fetch(SOURCE_URL);
-    if (!res.ok) throw new Error(`Téléchargement impossible (${res.status}) : ${SOURCE_URL}`);
-    src = await res.text();
+    if (REFRESH || !existsSync(LOCAL)) {
+      const res = await fetch(SOURCE_URL);
+      if (!res.ok) throw new Error(`Téléchargement impossible (${res.status}) : ${SOURCE_URL}`);
+      const today = new Date().toISOString().slice(0, 10);
+      mkdirSync(path.dirname(LOCAL), { recursive: true });
+      writeFileSync(LOCAL, `// Récupéré le ${today} depuis ${SOURCE_URL}\n${await res.text()}`);
+    }
+    src = readFileSync(LOCAL, "utf8");
   }
+  fetchedOn = src.match(/^\/\/ Récupéré le (\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
   const start = src.indexOf("[", src.indexOf("apiSchema"));
   const end = src.indexOf("\n;", start);
   if (start < 0 || end < 0) throw new Error("Format de apidoc.js inattendu : tableau apiSchema introuvable.");
@@ -306,6 +316,7 @@ async function main() {
 
   const L = [];
   L.push("# Parité avec l'API Proxmox VE", "");
+  if (fetchedOn) L.push(`Doc de l'API récupérée le ${fetchedOn} (copie dans \`docs/api/apidoc.js\`, à rafraîchir avec \`--refresh\`).`, "");
   L.push(`Inventaire de tous les points d'entrée de l'API Proxmox VE, et de ce que MyProxmox en couvre. Fichier produit par \`scripts/api-inventory.mjs\` le ${today}, à partir de la doc officielle (${opt("--schema") ? "fichier local" : SOURCE_URL}).`, "");
   L.push("Ne le modifie pas à la main : relance `node scripts/api-inventory.mjs` à la fin de chaque phase. La colonne « MyProxmox » est recalculée en cherchant les chemins appelés dans `web/src`, `shared` et `server/src`.", "");
   L.push("La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entrée récents (par exemple les fabrics et route maps du SDN, ou `/cluster/bulk-action`) n'existent pas en 8.x : l'interface devra les masquer quand le serveur ne les propose pas.", "");

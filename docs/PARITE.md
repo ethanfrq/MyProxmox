@@ -1,5 +1,7 @@
 # Parité avec l'API Proxmox VE
 
+Doc de l'API récupérée le 2026-11-04 (copie dans `docs/api/apidoc.js`, à rafraîchir avec `--refresh`).
+
 Inventaire de tous les points d'entrée de l'API Proxmox VE, et de ce que MyProxmox en couvre. Fichier produit par `scripts/api-inventory.mjs` le 2026-11-04, à partir de la doc officielle (https://pve.proxmox.com/pve-docs/api-viewer/apidoc.js).
 
 Ne le modifie pas à la main : relance `node scripts/api-inventory.mjs` à la fin de chaque phase. La colonne « MyProxmox » est recalculée en cherchant les chemins appelés dans `web/src`, `shared` et `server/src`.
