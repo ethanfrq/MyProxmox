@@ -78,3 +78,25 @@ export function request(target: Target, method: Method, path: string, headers: R
     req.end();
   });
 }
+
+/** Requête GET dont la réponse est relayée telle quelle (téléchargement de fichier). */
+export function requestRaw(target: Target, path: string, headers: Record<string, string>, params?: Params): Promise<http.IncomingMessage> {
+  const qs = encode(params);
+  const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}${qs ? `?${qs}` : ""}`);
+  return new Promise((resolve, reject) => {
+    const lib = url.protocol === "https:" ? https : http;
+    const req = lib.request(url, { method: "GET", headers, rejectUnauthorized: !target.insecureTls, timeout: 60000 }, (res) => {
+      if ((res.statusCode ?? 500) >= 400) {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (c) => (text += c));
+        res.on("end", () => reject(new PveError(res.statusCode ?? 500, (res.statusMessage || text.slice(0, 200) || "erreur").trim())));
+        return;
+      }
+      resolve(res);
+    });
+    req.on("timeout", () => req.destroy(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })));
+    req.on("error", (e: NodeJS.ErrnoException) => reject(new PveError(502, HINTS[e.code ?? ""] ?? e.message)));
+    req.end();
+  });
+}

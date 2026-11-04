@@ -92,8 +92,8 @@ export function MachineDetail() {
           {tab === "cloudinit" && type === "qemu" && <CloudInit ctx={ctx} />}
           {tab === "options" && <Options ctx={ctx} />}
           {tab === "historique" && <History ctx={ctx} />}
-          {tab === "snapshots" && <Snapshots base={base} node={node} type={type} />}
-          {tab === "sauvegardes" && <Backups node={node} type={type} vmid={Number(vmid)} running={running} />}
+          {tab === "snapshots" && <Snapshots ctx={ctx} />}
+          {tab === "sauvegardes" && <Backups ctx={ctx} />}
           {tab === "supprimer" && <DeleteGuest base={base} node={node} vmid={vmid} name={name} running={running} />}
         </>
       )}

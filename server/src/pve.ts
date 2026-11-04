@@ -2,7 +2,7 @@
 //  - userCall : avec le ticket de la personne connectée (ses propres droits Proxmox) ;
 //  - serviceCall : avec le jeton de service (alertes, écran de monitoring, MCP) ;
 //  - en mode démo, tout passe par le faux Proxmox.
-import { request, PveError, type Method, type Params, type Target } from "./http";
+import { request, requestRaw, PveError, type Method, type Params, type Target } from "./http";
 import { getConfig, DEMO } from "./config";
 import { mockRequest } from "../../shared/mock";
 import type { Call } from "../../shared/types";
@@ -97,4 +97,10 @@ export async function createServiceToken(call: Call) {
   await call("DELETE", `/access/users/${SERVICE_USER}/token/${SERVICE_TOKEN}`).catch(() => {});
   const token = await call("POST", `/access/users/${SERVICE_USER}/token/${SERVICE_TOKEN}`, { privsep: 0, comment: "MyProxmox" });
   return { tokenId: token["full-tokenid"] as string, tokenSecret: token.value as string };
+}
+
+/** Téléchargement brut avec le ticket de la personne connectée (fichiers restaurés...). */
+export async function ticketDownload(ticket: string, path: string, params: Params) {
+  if (DEMO) return { demo: String(mockRequest("GET", path, params)) };
+  return { stream: await requestRaw(target(), path, { Cookie: `PVEAuthCookie=${encodeURIComponent(ticket)}` }, params) };
 }

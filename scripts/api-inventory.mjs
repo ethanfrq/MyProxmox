@@ -47,6 +47,7 @@ const ALIAS_VALUES = {
   kind: ["qemu", "lxc", "start", "shutdown"],
   action: ["start", "shutdown", "reboot", "stop"],
   "r.type": ["qemu", "lxc"],
+  "ctx.type": ["qemu", "lxc"],
   "p.action": ["start", "shutdown", "reboot", "stop"],
 };
 // Préfixes stockés dans une variable avant d'être utilisés.

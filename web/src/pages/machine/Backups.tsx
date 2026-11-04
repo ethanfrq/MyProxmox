@@ -1,111 +1,243 @@
-// Onglet « Sauvegardes ».
-import { useEffect, useState } from "react";
+// Onglet « Sauvegardes » : sauvegarde immédiate (toutes les options), restauration avec
+// options, notes et protection, restauration de fichiers isolés depuis Proxmox Backup Server.
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Confirm, Empty, Field, Notice, Panel, useToast } from "../../components/ui";
+import { Button, Confirm, Modal, Notice, Panel, useToast } from "../../components/ui";
+import { DataTable } from "../../components/DataTable";
+import { Form, type FieldDef } from "../../components/Form";
 import { I } from "../../components/icons";
-import { api, pve, usePoll } from "../../lib/api";
+import { pve, usePoll } from "../../lib/api";
+import { usePermission } from "../../lib/permissions";
+import { DEMO } from "../../lib/env";
 import { bytes, date } from "../../../../shared/format";
+import { storagesFor, type GuestCtx } from "./common";
 
-export function Backups({ node, type, vmid, running }: { node: string; type: string; vmid: number; running: boolean }) {
+interface Backup { volid: string; storage: string; storageType: string; ctime: number; size: number; notes?: string; protected?: number; verification?: { state: string }; format?: string }
+
+export function Backups({ ctx }: { ctx: GuestCtx }) {
   const { watch, toast } = useToast();
-  const storages = usePoll(() => pve.get<any[]>(`/nodes/${node}/storage`, { content: "backup" }), 0, [node]);
-  const backupStores = (storages.data ?? []).filter((s) => String(s.content).includes("backup") && s.active);
-  const [store, setStore] = useState("");
-  const [mode, setMode] = useState("snapshot");
-  const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState<{ kind: "restore" | "delete"; volid: string; storage: string } | null>(null);
-
-  useEffect(() => { if (!store && backupStores[0]) setStore(backupStores[0].storage); }, [backupStores, store]);
-
+  const navigate = useNavigate();
+  const canBackup = usePermission(`/vms/${ctx.vmid}`, "VM.Backup").allowed;
+  const stores = usePoll(() => pve.get<any[]>(`/nodes/${ctx.node}/storage`, { content: "backup" }), 0, [ctx.node]);
+  const backupStores = (stores.data ?? []).filter((s) => String(s.content).includes("backup") && s.active);
   const list = usePoll(async () => {
     const all = await Promise.all(backupStores.map((s) =>
-      pve.get<any[]>(`/nodes/${node}/storage/${s.storage}/content`, { content: "backup", vmid }).then((l) => l.map((x) => ({ ...x, storage: s.storage }))),
+      pve.get<any[]>(`/nodes/${ctx.node}/storage/${s.storage}/content`, { content: "backup", vmid: ctx.vmid }).then((l) => l.map((x): Backup => ({ ...x, storage: s.storage, storageType: s.type }))),
     ));
-    return all.flat().sort((a, b) => (b.ctime ?? 0) - (a.ctime ?? 0));
+    return all.flat();
   }, 0, [backupStores.map((s) => s.storage).join(",")]);
+  const [now, setNow] = useState(false);
+  const [restore, setRestore] = useState<Backup | null>(null);
+  const [notes, setNotes] = useState<Backup | null>(null);
+  const [files, setFiles] = useState<Backup | null>(null);
+  const [del, setDel] = useState<Backup | null>(null);
 
-  async function backup() {
-    setBusy(true);
+  const content = (b: Backup) => `/nodes/${ctx.node}/storage/${b.storage}/content/${encodeURIComponent(b.volid)}`;
+  const protect = async (b: Backup) => {
     try {
-      const upid = await pve.post(`/nodes/${node}/vzdump`, { vmid, storage: store, mode, compress: "zstd" });
-      watch(node, upid, "Sauvegarde", list.refresh);
-    } catch (e) {
-      toast((e as Error).message, "error");
-    } finally {
-      setBusy(false);
-    }
-  }
+      await pve.put(content(b), { protected: b.protected ? 0 : 1 });
+      toast(b.protected ? "Protection retirée" : "Sauvegarde protégée : elle ne sera plus supprimée par la rétention", "ok");
+      list.refresh();
+    } catch (e) { toast((e as Error).message, "error"); }
+  };
 
   return (
-    <div className="grid g2">
-      <Panel title="Sauvegardes de cette machine" pad={false} right={<Button size="sm" icon={<I.refresh />} onClick={list.refresh}>Actualiser</Button>}>
-        {(list.data ?? []).length ? (
-          <table className="table">
-            <thead><tr><th>Date</th><th>Stockage</th><th className="num">Taille</th><th className="actions" /></tr></thead>
-            <tbody>
-              {(list.data ?? []).map((b) => (
-                <tr key={b.volid}>
-                  <td>{date(b.ctime)}</td>
-                  <td className="muted">{b.storage}</td>
-                  <td className="num">{bytes(b.size)}</td>
-                  <td className="actions">
-                    <span className="btn-group">
-                      <Button size="sm" onClick={() => setConfirm({ kind: "restore", volid: b.volid, storage: b.storage })}>Restaurer</Button>
-                      <Button size="sm" variant="danger" icon={<I.trash />} aria-label="Supprimer" onClick={() => setConfirm({ kind: "delete", volid: b.volid, storage: b.storage })} />
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <Empty>{list.loading ? "Chargement…" : "Aucune sauvegarde."}</Empty>}
+    <div className="stack">
+      <Panel pad={false} title="Sauvegardes de cette machine" right={
+        <span className="row">
+          <Button size="sm" icon={<I.refresh />} onClick={list.refresh}>Actualiser</Button>
+          <Button size="sm" variant="primary" icon={<I.download />} disabled={!canBackup || !backupStores.length} title={canBackup ? undefined : "Il te manque le droit VM.Backup"} onClick={() => setNow(true)}>Sauvegarder maintenant</Button>
+        </span>
+      }>
+        {!stores.loading && !backupStores.length && <div style={{ padding: 16 }}><Notice kind="warn">Aucun stockage n&apos;accepte les sauvegardes. Active le contenu « VZDump backup » sur un stockage.</Notice></div>}
+        <DataTable
+          rows={list.data}
+          loading={list.loading}
+          rowKey={(b) => b.volid}
+          initialSort={{ id: "date", dir: "desc" }}
+          filter={false}
+          empty="Aucune sauvegarde de cette machine."
+          columns={[
+            { id: "date", header: "Date", sort: (b) => b.ctime, cell: (b) => <>{date(b.ctime, true)}{b.protected ? <span className="tag" style={{ marginLeft: 6 }} title="Protégée contre la suppression">protégée</span> : null}</>, className: "nowrap" },
+            { id: "storage", header: "Stockage", sort: (b) => b.storage, cell: (b) => <span className="muted">{b.storage}{b.storageType === "pbs" ? " (PBS)" : ""}</span> },
+            { id: "size", header: "Taille", sort: (b) => b.size, cell: (b) => bytes(b.size), className: "num" },
+            { id: "notes", header: "Notes", cell: (b) => <span className="small">{b.notes}</span> },
+            { id: "verif", header: "Vérification", cell: (b) => (b.verification ? <span className={`badge ${b.verification.state === "ok" ? "on" : "err"}`}>{b.verification.state === "ok" ? "OK" : "échec"}</span> : <span className="muted small">-</span>) },
+          ]}
+          actions={(b) => (
+            <span className="btn-group">
+              <Button size="sm" onClick={() => setRestore(b)}>Restaurer</Button>
+              {b.storageType === "pbs" && <Button size="sm" onClick={() => setFiles(b)}>Fichiers</Button>}
+              <Button size="sm" onClick={() => setNotes(b)}>Notes</Button>
+              <Button size="sm" onClick={() => protect(b)}>{b.protected ? "Déprotéger" : "Protéger"}</Button>
+              <Button size="sm" variant="danger" icon={<I.trash />} aria-label="Supprimer" disabled={!!b.protected} title={b.protected ? "Retire d'abord la protection" : undefined} onClick={() => setDel(b)} />
+            </span>
+          )}
+        />
       </Panel>
-      <Panel title="Sauvegarder maintenant">
-        {backupStores.length ? (
-          <div className="stack">
-            <Field label="Stockage de destination">
-              <select className="select input" value={store} onChange={(e) => setStore(e.target.value)}>
-                {backupStores.map((s) => <option key={s.storage} value={s.storage}>{s.storage} ({bytes(s.avail)} libres)</option>)}
-              </select>
-            </Field>
-            <Field label="Mode" help="Snapshot : la machine reste allumée. Arrêt : la plus fiable, mais coupe le service.">
-              <select className="select input" value={mode} onChange={(e) => setMode(e.target.value)}>
-                <option value="snapshot">Snapshot (sans interruption)</option>
-                <option value="suspend">Suspension</option>
-                <option value="stop">Arrêt</option>
-              </select>
-            </Field>
-            <div><Button variant="primary" icon={<I.download />} busy={busy} onClick={backup}>Lancer la sauvegarde</Button></div>
-          </div>
-        ) : <Notice kind="warn">Aucun stockage n&apos;accepte les sauvegardes. Active le contenu « VZDump backup » sur un stockage dans Proxmox.</Notice>}
-      </Panel>
-      {confirm && (
-        <Confirm
-          title={confirm.kind === "restore" ? "Restaurer cette sauvegarde ?" : "Supprimer cette sauvegarde ?"}
-          danger
-          requireText={confirm.kind === "restore" ? String(vmid) : undefined}
-          confirmLabel={confirm.kind === "restore" ? "Écraser et restaurer" : "Supprimer"}
-          onConfirm={async () => {
-            try {
-              if (confirm.kind === "delete") {
-                const upid = await pve.del(`/nodes/${node}/storage/${confirm.storage}/content/${encodeURIComponent(confirm.volid)}`);
-                if (typeof upid === "string" && upid.startsWith("UPID")) watch(node, upid, "Suppression", list.refresh); else list.refresh();
-              } else {
-                if (running) throw new Error("Éteins la machine avant de la restaurer.");
-                const upid = type === "qemu"
-                  ? await pve.post(`/nodes/${node}/qemu`, { vmid, archive: confirm.volid, force: 1 })
-                  : await pve.post(`/nodes/${node}/lxc`, { vmid, ostemplate: confirm.volid, restore: 1, force: 1 });
-                watch(node, upid, "Restauration");
-              }
-            } catch (e) { toast((e as Error).message, "error"); }
-          }}
-          onClose={() => setConfirm(null)}
-        >
-          <p className="mono small">{confirm.volid}</p>
-          {confirm.kind === "restore" && <p>La machine actuelle sera <strong>entièrement remplacée</strong> par cette sauvegarde. Elle doit être éteinte.</p>}
+
+      {now && <BackupNow ctx={ctx} onClose={() => setNow(false)} onDone={list.refresh} />}
+      {restore && <RestoreDialog ctx={ctx} b={restore} onClose={() => setRestore(null)} onRestored={(vmid) => { if (vmid !== ctx.vmid) navigate(`/machines/${ctx.node}/${ctx.type}/${vmid}`); else ctx.refresh(); }} />}
+      {files && <FileRestore ctx={ctx} b={files} onClose={() => setFiles(null)} />}
+      {notes && (
+        <Modal title="Notes de la sauvegarde" onClose={() => setNotes(null)}>
+          <Form
+            fields={[{ name: "notes", label: "Notes", type: "textarea", rows: 4, full: true }]}
+            initial={{ notes: notes.notes ?? "" }}
+            onCancel={() => setNotes(null)}
+            onSubmit={async (_c, raw) => {
+              await pve.put(content(notes), { notes: raw.notes ?? "" });
+              toast("Notes enregistrées", "ok");
+              setNotes(null);
+              list.refresh();
+            }}
+          />
+        </Modal>
+      )}
+      {del && (
+        <Confirm title="Supprimer cette sauvegarde ?" danger confirmLabel="Supprimer" onConfirm={async () => {
+          try {
+            const upid = await pve.del(content(del));
+            if (typeof upid === "string" && upid.startsWith("UPID")) watch(ctx.node, upid, "Suppression", list.refresh); else list.refresh();
+          } catch (e) { toast((e as Error).message, "error"); }
+        }} onClose={() => setDel(null)}>
+          <p className="mono small">{del.volid}</p>
+          <p>Elle est effacée du stockage. Ça ne se défait pas.</p>
         </Confirm>
       )}
     </div>
   );
 }
 
+function BackupNow({ ctx, onClose, onDone }: { ctx: GuestCtx; onClose: () => void; onDone: () => void }) {
+  const { watch } = useToast();
+  const fields: FieldDef[] = [
+    { name: "storage", label: "Stockage de destination", type: "api-select", required: true, load: storagesFor(ctx.node, "backup") },
+    { name: "mode", label: "Mode", type: "select", default: "snapshot", options: [
+      { value: "snapshot", label: "Snapshot : la machine reste allumée" }, { value: "suspend", label: "Suspension : courte pause" }, { value: "stop", label: "Arrêt : le plus fiable, coupe le service" },
+    ] },
+    { name: "compress", label: "Compression", type: "select", default: "zstd", options: [{ value: "zstd", label: "ZSTD (rapide et efficace)" }, { value: "gzip", label: "GZIP" }, { value: "lzo", label: "LZO (le plus rapide)" }, { value: "0", label: "Aucune" }], help: "Ignorée sur Proxmox Backup Server, qui compresse lui-même." },
+    { name: "notes-template", label: "Notes", default: "{{guestname}}", help: "Variables : {{guestname}}, {{vmid}}, {{node}}, {{cluster}}." },
+    { name: "protected", label: "Protéger cette sauvegarde (jamais supprimée par la rétention)", type: "checkbox" },
+    { name: "remove", label: "Supprimer les anciennes sauvegardes de cette machine", type: "checkbox" },
+    { name: "keep", label: "En garder", type: "number", unit: "dernières", min: 1, default: 3, show: (v) => !!v.remove },
+    { name: "bwlimit", label: "Limite de débit", type: "number", unit: "Kio/s", advanced: true },
+  ];
+  return (
+    <Modal title={`Sauvegarder ${ctx.name} maintenant`} onClose={onClose}>
+      <Form
+        fields={fields}
+        submitLabel="Lancer la sauvegarde"
+        onCancel={onClose}
+        onSubmit={async (_c, v) => {
+          const upid = await pve.post<string>(`/nodes/${ctx.node}/vzdump`, {
+            vmid: ctx.vmid, storage: v.storage, mode: v.mode, compress: v.compress, "notes-template": v["notes-template"] || undefined,
+            protected: v.protected ? 1 : undefined, remove: v.remove ? 1 : 0, "prune-backups": v.remove ? `keep-last=${v.keep}` : undefined, bwlimit: v.bwlimit || undefined,
+          });
+          watch(ctx.node, upid, `Sauvegarde de ${ctx.name}`, onDone);
+          onClose();
+        }}
+      />
+    </Modal>
+  );
+}
+
+function RestoreDialog({ ctx, b, onClose, onRestored }: { ctx: GuestCtx; b: Backup; onClose: () => void; onRestored: (vmid: number) => void }) {
+  const { watch } = useToast();
+  const [values, setValues] = useState<Record<string, unknown> | null>(null);
+  const fields: FieldDef[] = [
+    { name: "target", label: "Restaurer vers", type: "select", default: "new", options: [{ value: "new", label: "Une nouvelle machine (la machine actuelle ne change pas)" }, { value: "same", label: `Cette machine (${ctx.vmid}), qui sera remplacée` }] },
+    { name: "vmid", label: "Nouvel ID", type: "api-select", show: (v) => v.target === "new", load: async () => { const id = await pve.get<string>("/cluster/nextid"); return [{ value: String(id), label: `${id} (premier libre)` }]; } },
+    { name: "storage", label: "Stockage des disques", type: "api-select", allowEmpty: "Celui d'origine", load: storagesFor(ctx.node, ctx.type === "qemu" ? "images" : "rootdir") },
+    { name: "start", label: "Démarrer après la restauration", type: "checkbox" },
+    { name: "unique", label: "Nouvelle adresse MAC (évite un conflit avec l'original)", type: "checkbox", default: true, show: (v) => v.target === "new" },
+    { name: "bwlimit", label: "Limite de débit", type: "number", unit: "Kio/s", advanced: true },
+  ];
+  const run = async (v: Record<string, unknown>) => {
+    const same = v.target === "same";
+    const vmid = same ? ctx.vmid : Number(v.vmid);
+    const params: Record<string, unknown> = { vmid, storage: v.storage || undefined, start: v.start ? 1 : 0, unique: !same && v.unique ? 1 : undefined, bwlimit: v.bwlimit || undefined, force: same ? 1 : undefined };
+    if (ctx.type === "qemu") params.archive = b.volid;
+    else Object.assign(params, { ostemplate: b.volid, restore: 1 });
+    const upid = await pve.post<string>(`/nodes/${ctx.node}/${ctx.type}`, params);
+    watch(ctx.node, upid, `Restauration vers ${vmid}`, () => onRestored(vmid));
+  };
+  return (
+    <>
+      <Modal title="Restaurer la sauvegarde" onClose={onClose}>
+        <div className="stack">
+          <p className="mono small" style={{ margin: 0 }}>{b.volid}</p>
+          <Form
+            fields={fields}
+            submitLabel="Restaurer"
+            onCancel={onClose}
+            onSubmit={async (_c, v) => {
+              if (v.target === "same") {
+                if (ctx.running) throw new Error("Éteins d'abord la machine : on ne peut pas la remplacer pendant qu'elle tourne.");
+                setValues(v);
+                return;
+              }
+              await run(v);
+              onClose();
+            }}
+          />
+        </div>
+      </Modal>
+      {values && (
+        <Confirm title={`Remplacer ${ctx.name} par la sauvegarde ?`} danger requireText={String(ctx.vmid)} confirmLabel="Écraser et restaurer"
+          onConfirm={async () => { await run(values); onClose(); }} onClose={() => setValues(null)}>
+          <p>La machine actuelle et tous ses disques sont <strong>entièrement remplacés</strong> par la sauvegarde du {date(b.ctime, true)}.</p>
+        </Confirm>
+      )}
+    </>
+  );
+}
+
+// ── Restauration de fichiers isolés (Proxmox Backup Server) ───────
+interface Entry { filepath: string; text: string; type: string; leaf: number; size?: number; mtime?: number }
+
+function FileRestore({ ctx, b, onClose }: { ctx: GuestCtx; b: Backup; onClose: () => void }) {
+  const [path, setPath] = useState<Entry[]>([]);
+  const cur = path.at(-1)?.filepath ?? "/";
+  const list = usePoll(() => pve.get<Entry[]>(`/nodes/${ctx.node}/storage/${b.storage}/file-restore/list`, { volume: b.volid, filepath: cur }), 0, [cur]);
+  const download = async (e: Entry) => {
+    const q = new URLSearchParams({ volume: b.volid, filepath: e.filepath, tar: e.leaf ? "0" : "1" });
+    // api: GET /nodes/{node}/storage/{storage}/file-restore/download
+    const p = `/nodes/${ctx.node}/storage/${b.storage}/file-restore/download`;
+    if (DEMO) {
+      const text = await pve.get<string>(p, Object.fromEntries(q));
+      const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+      const a = Object.assign(document.createElement("a"), { href: url, download: e.leaf ? e.text : `${e.text}.tar.zst` });
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    window.location.href = `/api/pve-raw${p}?${q}`;
+  };
+  return (
+    <Modal title="Restaurer des fichiers" wide onClose={onClose} foot={<Button onClick={onClose}>Fermer</Button>}>
+      <div className="stack">
+        <p className="small muted" style={{ margin: 0 }}>Parcours la sauvegarde du {date(b.ctime, true)} et télécharge un fichier, ou un dossier entier en archive. La machine n&apos;est pas touchée.</p>
+        <div className="crumbs">
+          <button type="button" className="link-btn" onClick={() => setPath([])}>{b.volid.split("/").slice(-2).join("/")}</button>
+          {path.map((e, i) => <span key={e.filepath}> / <button type="button" className="link-btn" onClick={() => setPath(path.slice(0, i + 1))}>{e.text}</button></span>)}
+        </div>
+        {list.error && <Notice kind="error">{list.error}. Le stockage PBS doit être joignable et la restauration de fichiers activée.</Notice>}
+        <table className="table">
+          <thead><tr><th>Nom</th><th className="num">Taille</th><th>Modifié</th><th className="actions" /></tr></thead>
+          <tbody>
+            {(list.data ?? []).map((e) => (
+              <tr key={e.filepath}>
+                <td>{e.leaf ? <span className="mono">{e.text}</span> : <button type="button" className="link-btn mono" onClick={() => setPath([...path, e])}>{e.text}/</button>}</td>
+                <td className="num small">{e.size ? bytes(e.size) : ""}</td>
+                <td className="small muted">{e.mtime ? date(e.mtime) : ""}</td>
+                <td className="actions"><Button size="sm" icon={<I.download />} onClick={() => download(e)}>{e.leaf ? "Télécharger" : "Archive"}</Button></td>
+              </tr>
+            ))}
+            {list.loading && <tr><td colSpan={4} className="muted">Chargement…</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </Modal>
+  );
+}

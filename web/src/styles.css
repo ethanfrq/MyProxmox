@@ -605,3 +605,7 @@ a.user-chip:hover { color: var(--panel); }
 .md a { color: var(--orange); text-decoration: underline; }
 .md hr { border: 0; border-top: 1px solid var(--line); }
 .md-preview { border: 1px solid var(--line-2); padding: 10px 14px; overflow: auto; max-height: 300px; }
+.snap-name { display: inline-flex; align-items: center; gap: 6px; }
+.snap-branch { color: var(--muted); }
+.snap-current td { background: var(--sel-bg); }
+.crumbs { font-size: 13px; }

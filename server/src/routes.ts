@@ -6,7 +6,7 @@ import {
   DEMO, PRIVATE_RANGES, ROOT, clearNotifications, getActivity, getConfig, getNotifications, logActivity,
   markRead, newSecret, saveConfig, sameHash, sha256, version,
 } from "./config";
-import { PveError, createServiceToken, login, serviceCall, ticketCall } from "./pve";
+import { PveError, createServiceToken, login, serviceCall, ticketCall, ticketDownload } from "./pve";
 import { request } from "./http";
 import { clientIp, validCidr } from "./ipfilter";
 import { addStream, broadcast, clearCookie, createSession, destroySession, destroyUserSessions, getSession, requireAdmin, requireSession, setCookie } from "./sessions";
@@ -293,6 +293,27 @@ api.all(/^\/pve\/(.+)$/, wrap(async (req) => {
     throw e;
   }
 }));
+
+// Téléchargement brut (restauration de fichiers depuis PBS), avec les droits Proxmox de la personne
+api.get(/^\/pve-raw\/(.+)$/, async (req, res) => {
+  try {
+    if (req.session!.kind !== "proxmox") throw bad("Réservé aux comptes Proxmox.", 403);
+    const pvePath = "/" + String(req.params[0]).split("/").map((x) => encodeURIComponent(decodeURIComponent(x))).join("/");
+    if (!/\/file-restore\/download$/.test(pvePath)) throw bad("Téléchargement non autorisé pour ce chemin.", 400);
+    const params = req.query as Record<string, unknown>;
+    const r = await ticketDownload(req.session!.ticket, pvePath, params);
+    const name = String(Buffer.from(String(params.filepath ?? ""), "base64").toString()).split("/").pop() || "fichier";
+    const file = Number(params.tar) ? `${name}.tar.zst` : name;
+    res.setHeader("Content-Disposition", `attachment; filename="${file.replace(/[^\w.-]/g, "_")}"`);
+    await logActivity({ actor: req.session!.username, action: "fichier restauré depuis une sauvegarde", target: String(params.volume ?? ""), result: "ok", detail: name });
+    if ("demo" in r) return void res.type("text/plain").send(r.demo);
+    res.setHeader("Content-Type", r.stream.headers["content-type"] ?? "application/octet-stream");
+    r.stream.pipe(res);
+  } catch (e) {
+    const status = (e as { status?: number }).status ?? 500;
+    res.status(status).json({ error: (e as Error).message });
+  }
+});
 
 // Informations calculées (avec les droits de la personne connectée)
 api.get("/insights/overview", wrap((req) => overview(req.call!)));

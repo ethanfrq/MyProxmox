@@ -15,12 +15,12 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | [Datacenter](#datacenter) | 203 | 6 | 185 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 6 | 45 | 9 | 3 (quorum, HA, tâches), 6 |
 | [Nœud](#nœud) | 173 | 26 | 125 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 20 | 70 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 18 | 38 | 6 | 4 |
-| [Stockage](#stockage) | 33 | 5 | 26 | 2 | 3 (occupation), 7 |
+| [VM QEMU](#vm-qemu) | 97 | 21 | 69 | 7 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 19 | 37 | 6 | 4 |
+| [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 12 | 30 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 0 | 7 | 0 | 6 |
-| **Total** | **680** | **93** | **526** | **61** | |
+| **Total** | **680** | **97** | **522** | **61** | |
 
 ## Phases
 
@@ -812,7 +812,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 20 faits, 70 à faire, 7 hors périmètre.
+97 points d'entrée : 21 faits, 69 à faire, 7 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -993,7 +993,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}` | (sans description) | tout utilisateur connecté | Hors périmètre |
 | DELETE | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}` | Delete a VM snapshot. | VM.Snapshot sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/config` | Get snapshot configuration | VM.Snapshot ou VM.Snapshot.Rollback ou VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/config` | Update snapshot metadata. | VM.Snapshot sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/config` | Update snapshot metadata. | VM.Snapshot sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback` | Rollback VM state to specified snapshot. | VM.Snapshot ou VM.Snapshot.Rollback sur /vms/{vmid} | Fait |
 
 ### VM QEMU : spiceproxy
@@ -1048,7 +1048,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Conteneur LXC
 
-62 points d'entrée : 18 faits, 38 à faire, 6 hors périmètre.
+62 points d'entrée : 19 faits, 37 à faire, 6 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1176,7 +1176,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}` | (sans description) | tout utilisateur connecté | Hors périmètre |
 | DELETE | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}` | Delete a LXC snapshot. | VM.Snapshot sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config` | Get snapshot configuration | VM.Snapshot ou VM.Snapshot.Rollback ou VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config` | Update snapshot metadata. | VM.Snapshot sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config` | Update snapshot metadata. | VM.Snapshot sur /vms/{vmid} | Fait |
 | POST | `/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/rollback` | Rollback LXC state to specified snapshot. | VM.Snapshot ou VM.Snapshot.Rollback sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : spiceproxy
@@ -1224,7 +1224,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Stockage
 
-33 points d'entrée : 5 faits, 26 à faire, 2 hors périmètre.
+33 points d'entrée : 7 faits, 24 à faire, 2 hors périmètre.
 
 ### Stockage : (racine)
 
@@ -1264,8 +1264,8 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/nodes/{node}/storage/{storage}/file-restore/download` | Extract a file or directory (as zip archive) from a PBS backup. | You need read access for the volume. | À faire |
-| GET | `/nodes/{node}/storage/{storage}/file-restore/list` | List files and directories for single file restore under the given path. | You need read access for the volume. | À faire |
+| GET | `/nodes/{node}/storage/{storage}/file-restore/download` | Extract a file or directory (as zip archive) from a PBS backup. | You need read access for the volume. | Fait |
+| GET | `/nodes/{node}/storage/{storage}/file-restore/list` | List files and directories for single file restore under the given path. | You need read access for the volume. | Fait |
 
 ### Stockage : identity
 

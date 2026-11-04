@@ -13,7 +13,7 @@ const RULES: Record<LocalRole, (method: string, path: string) => boolean> = {
   // Écran de monitoring uniquement
   monitoring: (_m, p) => /^\/monitoring(\/|$)/.test(p),
   // Toutes les pages en lecture, aucune action
-  lecture: (m, p) => m === "GET" || LECTURE_WRITES.some((r) => r.test(p)),
+  lecture: (m, p) => (m === "GET" && !p.startsWith("/pve-raw/")) || LECTURE_WRITES.some((r) => r.test(p)),
 };
 
 export function localAllowed(role: LocalRole, method: string, path: string) {

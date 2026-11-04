@@ -91,3 +91,48 @@ test("options, ordre de boot, Cloud-Init, historique et notes", async ({ page })
   await expect(page.locator(".md strong")).toHaveText("Portainer");
   expect(errors).toEqual([]);
 });
+
+test("snapshots en arbre : créer, décrire, revenir, supprimer", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "/machines/pve/qemu/103", "snapshots");
+  await expect(page.locator("tr", { hasText: "outils" })).toContainText("RAM");
+  await page.getByRole("button", { name: "Prendre un snapshot" }).click();
+  await page.getByRole("dialog").getByLabel("Nom").fill("test-e2e");
+  await page.getByRole("dialog").getByRole("button", { name: "Prendre le snapshot" }).click();
+  const row = page.locator("tr", { hasText: "test-e2e" });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "Description" }).click();
+  await page.getByRole("dialog").getByLabel("Description").fill("Créé par les tests");
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(row).toContainText("Créé par les tests");
+  await page.locator("tr", { hasText: "propre" }).getByRole("button", { name: "Revenir ici" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Revenir à ce snapshot" }).click();
+  await row.getByRole("button", { name: "Supprimer test-e2e" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Supprimer" }).click();
+  await expect(page.locator("tr", { hasText: "test-e2e" })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("sauvegardes : maintenant, notes, protection, restauration, fichiers PBS", async ({ page }) => {
+  const errors = watchErrors(page);
+  await loginProxmox(page);
+  await open(page, "/machines/pve/qemu/101", "sauvegardes");
+  await page.getByRole("button", { name: "Sauvegarder maintenant" }).click();
+  const dlg = page.getByRole("dialog");
+  await dlg.getByLabel("Notes").fill("Test {{guestname}}");
+  await dlg.getByLabel(/Protéger/).check();
+  await dlg.getByRole("button", { name: "Lancer la sauvegarde" }).click();
+  await page.getByRole("button", { name: "Actualiser" }).click();
+  await expect(page.locator("tr", { hasText: "Test home-assistant" })).toContainText("protégée");
+  const pbs = page.locator("tr", { hasText: "(PBS)" }).first();
+  await pbs.getByRole("button", { name: "Fichiers" }).click();
+  await page.getByRole("button", { name: "drive-scsi0.img.fidx/" }).click();
+  await page.getByRole("button", { name: "part/" }).click();
+  await expect(page.getByRole("dialog")).toContainText("1/");
+  await page.getByRole("dialog").getByRole("button", { name: "Fermer" }).click();
+  await pbs.getByRole("button", { name: "Restaurer" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Restaurer" }).click();
+  await expect(page).toHaveURL(/\/machines\/pve\/qemu\/1\d\d/, { timeout: 10_000 });
+  expect(errors).toEqual([]);
+});
