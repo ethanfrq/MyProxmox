@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 6 | 185 | 12 | 3 (lecture sauvegardes), 6 |
+| [Datacenter](#datacenter) | 203 | 22 | 169 | 12 | 3 (lecture sauvegardes), 6 |
 | [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
-| [Nœud](#nœud) | 173 | 29 | 122 | 22 | 3 (lecture), 5 |
-| [VM QEMU](#vm-qemu) | 97 | 25 | 65 | 7 | 4 |
-| [Conteneur LXC](#conteneur-lxc) | 62 | 23 | 33 | 6 | 4 |
+| [Nœud](#nœud) | 173 | 35 | 116 | 22 | 3 (lecture), 5 |
+| [VM QEMU](#vm-qemu) | 97 | 41 | 49 | 7 | 4 |
+| [Conteneur LXC](#conteneur-lxc) | 62 | 39 | 17 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **114** | **505** | **61** | |
+| **Total** | **680** | **168** | **451** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 6 faits, 185 à faire, 12 hors périmètre.
+203 points d'entrée : 22 faits, 169 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -94,12 +94,12 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/firewall` | Directory index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/cluster/firewall/aliases` | List aliases | Sys.Audit sur / | À faire |
-| POST | `/cluster/firewall/aliases` | Create IP or Network Alias. | Sys.Modify sur / | À faire |
+| GET | `/cluster/firewall/aliases` | List aliases | Sys.Audit sur / | Fait |
+| POST | `/cluster/firewall/aliases` | Create IP or Network Alias. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/aliases/{name}` | Read alias. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/firewall/aliases/{name}` | Update IP or Network alias. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/aliases/{name}` | Remove IP or Network alias. | Sys.Modify sur / | À faire |
-| GET | `/cluster/firewall/groups` | List security groups. | tout utilisateur connecté | À faire |
+| PUT | `/cluster/firewall/aliases/{name}` | Update IP or Network alias. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/firewall/aliases/{name}` | Remove IP or Network alias. | Sys.Modify sur / | Fait |
+| GET | `/cluster/firewall/groups` | List security groups. | tout utilisateur connecté | Fait |
 | POST | `/cluster/firewall/groups` | Create new security group. | Sys.Modify sur / | À faire |
 | GET | `/cluster/firewall/groups/{group}` | List rules. | Sys.Audit sur / | À faire |
 | POST | `/cluster/firewall/groups/{group}` | Create new rule. | Sys.Modify sur / | À faire |
@@ -107,23 +107,23 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | GET | `/cluster/firewall/groups/{group}/{pos}` | Get single rule data. | Sys.Audit sur / | À faire |
 | PUT | `/cluster/firewall/groups/{group}/{pos}` | Modify rule data. | Sys.Modify sur / | À faire |
 | DELETE | `/cluster/firewall/groups/{group}/{pos}` | Delete rule. | Sys.Modify sur / | À faire |
-| GET | `/cluster/firewall/ipset` | List IPSets | Sys.Audit sur / | À faire |
-| POST | `/cluster/firewall/ipset` | Create new IPSet | Sys.Modify sur / | À faire |
-| GET | `/cluster/firewall/ipset/{name}` | List IPSet content | Sys.Audit sur / | À faire |
-| POST | `/cluster/firewall/ipset/{name}` | Add IP or Network to IPSet. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/ipset/{name}` | Delete IPSet | Sys.Modify sur / | À faire |
+| GET | `/cluster/firewall/ipset` | List IPSets | Sys.Audit sur / | Fait |
+| POST | `/cluster/firewall/ipset` | Create new IPSet | Sys.Modify sur / | Fait |
+| GET | `/cluster/firewall/ipset/{name}` | List IPSet content | Sys.Audit sur / | Fait |
+| POST | `/cluster/firewall/ipset/{name}` | Add IP or Network to IPSet. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/firewall/ipset/{name}` | Delete IPSet | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/ipset/{name}/{cidr}` | Read IP or Network settings from IPSet. | Sys.Audit sur / | À faire |
 | PUT | `/cluster/firewall/ipset/{name}/{cidr}` | Update IP or Network settings | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | Sys.Modify sur / | À faire |
+| DELETE | `/cluster/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/macros` | List available macros | tout utilisateur connecté | À faire |
 | GET | `/cluster/firewall/options` | Get Firewall options. | Sys.Audit sur / | Fait |
-| PUT | `/cluster/firewall/options` | Set Firewall options. | Sys.Modify sur / | À faire |
+| PUT | `/cluster/firewall/options` | Set Firewall options. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/refs` | Lists possible IPSet/Alias reference which are allowed in source/dest properties. | Sys.Audit sur / | À faire |
-| GET | `/cluster/firewall/rules` | List rules. | Sys.Audit sur / | À faire |
-| POST | `/cluster/firewall/rules` | Create new rule. | Sys.Modify sur / | À faire |
+| GET | `/cluster/firewall/rules` | List rules. | Sys.Audit sur / | Fait |
+| POST | `/cluster/firewall/rules` | Create new rule. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/rules/{pos}` | Get single rule data. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/firewall/rules/{pos}` | Modify rule data. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/rules/{pos}` | Delete rule. | Sys.Modify sur / | À faire |
+| PUT | `/cluster/firewall/rules/{pos}` | Modify rule data. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/firewall/rules/{pos}` | Delete rule. | Sys.Modify sur / | Fait |
 
 ### Datacenter : jobs
 
@@ -435,7 +435,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Nœud
 
-173 points d'entrée : 29 faits, 122 à faire, 22 hors périmètre.
+173 points d'entrée : 35 faits, 116 à faire, 22 hors périmètre.
 
 ### Nœud : (racine)
 
@@ -584,14 +584,14 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/firewall` | Directory index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/firewall/log` | Read firewall log | Sys.Syslog sur /nodes/{node} | À faire |
+| GET | `/nodes/{node}/firewall/log` | Read firewall log | Sys.Syslog sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/firewall/options` | Get host firewall options. | Sys.Audit sur /nodes/{node} | Fait |
-| PUT | `/nodes/{node}/firewall/options` | Set Firewall options. | Sys.Modify sur /nodes/{node} | À faire |
-| GET | `/nodes/{node}/firewall/rules` | List rules. | Sys.Audit sur /nodes/{node} | À faire |
-| POST | `/nodes/{node}/firewall/rules` | Create new rule. | Sys.Modify sur /nodes/{node} | À faire |
+| PUT | `/nodes/{node}/firewall/options` | Set Firewall options. | Sys.Modify sur /nodes/{node} | Fait |
+| GET | `/nodes/{node}/firewall/rules` | List rules. | Sys.Audit sur /nodes/{node} | Fait |
+| POST | `/nodes/{node}/firewall/rules` | Create new rule. | Sys.Modify sur /nodes/{node} | Fait |
 | GET | `/nodes/{node}/firewall/rules/{pos}` | Get single rule data. | Sys.Audit sur /nodes/{node} | À faire |
-| PUT | `/nodes/{node}/firewall/rules/{pos}` | Modify rule data. | Sys.Modify sur /nodes/{node} | À faire |
-| DELETE | `/nodes/{node}/firewall/rules/{pos}` | Delete rule. | Sys.Modify sur /nodes/{node} | À faire |
+| PUT | `/nodes/{node}/firewall/rules/{pos}` | Modify rule data. | Sys.Modify sur /nodes/{node} | Fait |
+| DELETE | `/nodes/{node}/firewall/rules/{pos}` | Delete rule. | Sys.Modify sur /nodes/{node} | Fait |
 
 ### Nœud : hardware
 
@@ -812,7 +812,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## VM QEMU
 
-97 points d'entrée : 25 faits, 65 à faire, 7 hors périmètre.
+97 points d'entrée : 41 faits, 49 à faire, 7 hors périmètre.
 
 ### VM QEMU : (racine)
 
@@ -894,28 +894,28 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/qemu/{vmid}/firewall` | Directory index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/aliases` | List aliases | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/firewall/aliases` | Create IP or Network Alias. | VM.Config.Network sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/aliases` | List aliases | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/firewall/aliases` | Create IP or Network Alias. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/aliases/{name}` | Read alias. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/qemu/{vmid}/firewall/aliases/{name}` | Update IP or Network alias. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/aliases/{name}` | Remove IP or Network alias. | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/ipset` | List IPSets | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/firewall/ipset` | Create new IPSet | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | List IPSet content | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | Add IP or Network to IPSet. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | Delete IPSet | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/firewall/aliases/{name}` | Update IP or Network alias. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/aliases/{name}` | Remove IP or Network alias. | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/ipset` | List IPSets | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/firewall/ipset` | Create new IPSet | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | List IPSet content | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | Add IP or Network to IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}` | Delete IPSet | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Read IP or Network settings from IPSet. | VM.Audit sur /vms/{vmid} | À faire |
 | PUT | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Update IP or Network settings | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | À faire |
+| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/qemu/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/refs` | Lists possible IPSet/Alias reference which are allowed in source/dest properties. | VM.Audit sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/qemu/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/qemu/{vmid}/firewall/rules` | Create new rule. | VM.Config.Network sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/qemu/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/qemu/{vmid}/firewall/rules` | Create new rule. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}` | Get single rule data. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}` | Modify rule data. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}` | Delete rule. | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}` | Modify rule data. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}` | Delete rule. | VM.Config.Network sur /vms/{vmid} | Fait |
 
 ### VM QEMU : migrate
 
@@ -1048,7 +1048,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Conteneur LXC
 
-62 points d'entrée : 23 faits, 33 à faire, 6 hors périmètre.
+62 points d'entrée : 39 faits, 17 à faire, 6 hors périmètre.
 
 ### Conteneur LXC : (racine)
 
@@ -1083,28 +1083,28 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/nodes/{node}/lxc/{vmid}/firewall` | Directory index. | tout utilisateur connecté | Hors périmètre |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/aliases` | List aliases | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/lxc/{vmid}/firewall/aliases` | Create IP or Network Alias. | VM.Config.Network sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/aliases` | List aliases | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/lxc/{vmid}/firewall/aliases` | Create IP or Network Alias. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}` | Read alias. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}` | Update IP or Network alias. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}` | Remove IP or Network alias. | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/ipset` | List IPSets | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/lxc/{vmid}/firewall/ipset` | Create new IPSet | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | List IPSet content | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | Add IP or Network to IPSet. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | Delete IPSet | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}` | Update IP or Network alias. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}` | Remove IP or Network alias. | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/ipset` | List IPSets | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/lxc/{vmid}/firewall/ipset` | Create new IPSet | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | List IPSet content | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | Add IP or Network to IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}` | Delete IPSet | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Read IP or Network settings from IPSet. | VM.Audit sur /vms/{vmid} | À faire |
 | PUT | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Update IP or Network settings | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | À faire |
+| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}` | Remove IP or Network from IPSet. | VM.Config.Network sur /vms/{vmid} | Fait |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/log` | Read firewall log | VM.Console sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/options` | Get VM firewall options. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/lxc/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/lxc/{vmid}/firewall/options` | Set Firewall options. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/refs` | Lists possible IPSet/Alias reference which are allowed in source/dest properties. | VM.Audit sur /vms/{vmid} | À faire |
-| GET | `/nodes/{node}/lxc/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | À faire |
-| POST | `/nodes/{node}/lxc/{vmid}/firewall/rules` | Create new rule. | VM.Config.Network sur /vms/{vmid} | À faire |
+| GET | `/nodes/{node}/lxc/{vmid}/firewall/rules` | List rules. | VM.Audit sur /vms/{vmid} | Fait |
+| POST | `/nodes/{node}/lxc/{vmid}/firewall/rules` | Create new rule. | VM.Config.Network sur /vms/{vmid} | Fait |
 | GET | `/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}` | Get single rule data. | VM.Audit sur /vms/{vmid} | À faire |
-| PUT | `/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}` | Modify rule data. | VM.Config.Network sur /vms/{vmid} | À faire |
-| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}` | Delete rule. | VM.Config.Network sur /vms/{vmid} | À faire |
+| PUT | `/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}` | Modify rule data. | VM.Config.Network sur /vms/{vmid} | Fait |
+| DELETE | `/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}` | Delete rule. | VM.Config.Network sur /vms/{vmid} | Fait |
 
 ### Conteneur LXC : interfaces
 

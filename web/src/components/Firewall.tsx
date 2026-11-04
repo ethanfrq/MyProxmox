@@ -48,10 +48,10 @@ function ruleParams(v: Values, existing?: Values) {
   return Object.fromEntries(Object.entries(body).filter(([, x]) => x !== undefined));
 }
 
-function Rules({ base, scope, canEdit, groupsBase }: { base: string; scope: FwScope; canEdit: boolean; groupsBase?: string }) {
+function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; canEdit: boolean; groupsFw?: string }) {
   const { toast } = useToast();
-  const rules = usePoll(() => pve.get<any[]>(`${base}/rules`), 0, [base]);
-  const groups = usePoll(() => (groupsBase ? pve.get<any[]>(`${groupsBase}/groups`) : Promise.resolve([])), 0, [groupsBase]);
+  const rules = usePoll(() => pve.get<any[]>(`${fw}/rules`), 0, [fw]);
+  const groups = usePoll(() => (groupsFw ? pve.get<any[]>(`${groupsFw}/groups`) : Promise.resolve([])), 0, [groupsFw]);
   const [edit, setEdit] = useState<any | "new" | null>(null);
   const [del, setDel] = useState<any | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
@@ -84,14 +84,14 @@ function Rules({ base, scope, canEdit, groupsBase }: { base: string; scope: FwSc
                   onDragOver={(e) => { e.preventDefault(); setOver(r.pos); }}
                   onDragEnd={() => { setDrag(null); setOver(null); }}
                   onDrop={() => {
-                    if (drag !== null && drag !== r.pos) act(() => pve.put(`${base}/rules/${drag}`, { moveto: r.pos }), "Ordre enregistré");
+                    if (drag !== null && drag !== r.pos) act(() => pve.put(`${fw}/rules/${drag}`, { moveto: r.pos }), "Ordre enregistré");
                     setDrag(null);
                     setOver(null);
                   }}
                   className={`${drag === r.pos ? "dragging" : ""} ${over === r.pos && drag !== r.pos ? "drop-target" : ""} ${r.enable ? "" : "fw-off"}`}
                 >
                   <td className="grip" aria-hidden title="Glisser pour déplacer">⋮⋮</td>
-                  <td><Toggle on={!!r.enable} label={`Activer la règle ${r.pos}`} onChange={(on) => canEdit && act(() => pve.put(`${base}/rules/${r.pos}`, { enable: on ? 1 : 0 }))} /></td>
+                  <td><Toggle on={!!r.enable} label={`Activer la règle ${r.pos}`} onChange={(on) => canEdit && act(() => pve.put(`${fw}/rules/${r.pos}`, { enable: on ? 1 : 0 }))} /></td>
                   <td className="small">{r.type === "in" ? "Entrant" : r.type === "out" ? "Sortant" : r.type === "group" ? "Groupe" : "Transfert"}</td>
                   <td>{r.type === "group" ? <span className="tag">{r.action}</span> : <span className={`badge ${ACTION_CLASS[r.action] ?? ""}`}>{r.action}</span>}</td>
                   <td className="small mono">{r.macro ?? (r.proto ? `${r.proto}${r.dport ? ` ${r.dport}` : ""}` : "tout")}</td>
@@ -100,7 +100,7 @@ function Rules({ base, scope, canEdit, groupsBase }: { base: string; scope: FwSc
                   <td className="small">{r.comment}</td>
                   <td className="actions">
                     <span className="btn-group">
-                      <Button size="sm" disabled={!canEdit || r.pos === 0} aria-label={`Monter la règle ${r.pos}`} onClick={() => act(() => pve.put(`${base}/rules/${r.pos}`, { moveto: r.pos - 1 }))}>↑</Button>
+                      <Button size="sm" disabled={!canEdit || r.pos === 0} aria-label={`Monter la règle ${r.pos}`} onClick={() => act(() => pve.put(`${fw}/rules/${r.pos}`, { moveto: r.pos - 1 }))}>↑</Button>
                       <Button size="sm" disabled={!canEdit} onClick={() => setEdit(r)}>Modifier</Button>
                       <Button size="sm" variant="danger" icon={<I.trash />} aria-label={`Supprimer la règle ${r.pos}`} disabled={!canEdit} onClick={() => setDel(r)} />
                     </span>
@@ -118,8 +118,8 @@ function Rules({ base, scope, canEdit, groupsBase }: { base: string; scope: FwSc
             initial={edit === "new" ? undefined : { ...edit, group: edit.type === "group" ? edit.action : "", enable: !!edit.enable }}
             onCancel={() => setEdit(null)}
             onSubmit={async (_c, v) => {
-              if (edit === "new") await pve.post(`${base}/rules`, ruleParams(v));
-              else await pve.put(`${base}/rules/${edit.pos}`, ruleParams(v, edit));
+              if (edit === "new") await pve.post(`${fw}/rules`, ruleParams(v));
+              else await pve.put(`${fw}/rules/${edit.pos}`, ruleParams(v, edit));
               toast("Règle enregistrée", "ok");
               setEdit(null);
               rules.refresh();
@@ -128,7 +128,7 @@ function Rules({ base, scope, canEdit, groupsBase }: { base: string; scope: FwSc
         </Modal>
       )}
       {del && (
-        <Confirm title="Supprimer cette règle ?" danger confirmLabel="Supprimer" onConfirm={() => act(() => pve.del(`${base}/rules/${del.pos}`), "Règle supprimée")} onClose={() => setDel(null)}>
+        <Confirm title="Supprimer cette règle ?" danger confirmLabel="Supprimer" onConfirm={() => act(() => pve.del(`${fw}/rules/${del.pos}`), "Règle supprimée")} onClose={() => setDel(null)}>
           <p>{del.type === "group" ? `Groupe ${del.action}` : `${del.action} ${del.macro ?? del.proto ?? ""} ${del.dport ?? ""}`} {del.comment ? `(${del.comment})` : ""}</p>
         </Confirm>
       )}
@@ -169,9 +169,9 @@ function optionFields(scope: FwScope): FieldDef[] {
   ];
 }
 
-function Options({ base, scope, canEdit }: { base: string; scope: FwScope; canEdit: boolean }) {
+function Options({ fw, scope, canEdit }: { fw: string; scope: FwScope; canEdit: boolean }) {
   const { toast } = useToast();
-  const opts = usePoll(() => pve.get<Record<string, any>>(`${base}/options`), 0, [base]);
+  const opts = usePoll(() => pve.get<Record<string, any>>(`${fw}/options`), 0, [fw]);
   if (!opts.data) return <Empty>Chargement…</Empty>;
   const fields = optionFields(scope).map((f) => ({ ...f, readOnly: !canEdit }));
   const initial: Values = Object.fromEntries(fields.map((f) => [f.name, f.type === "checkbox" ? !!Number(opts.data![f.name] ?? (f.name === "dhcp" || f.name === "ndp" || f.name === "macfilter" ? 1 : 0)) : opts.data![f.name] ?? (f.name.startsWith("policy_in") ? "DROP" : f.name.startsWith("policy_out") ? "ACCEPT" : "")]));
@@ -191,7 +191,7 @@ function Options({ base, scope, canEdit }: { base: string; scope: FwScope; canEd
             else if (x === "" || x === undefined) { if (opts.data![f.name] !== undefined) del.push(f.name); } else body[f.name] = x;
           }
           if (del.length) body.delete = del.join(",");
-          await pve.put(`${base}/options`, body);
+          await pve.put(`${fw}/options`, body);
           toast("Options du pare-feu enregistrées", "ok");
           opts.refresh();
         }}
@@ -200,9 +200,9 @@ function Options({ base, scope, canEdit }: { base: string; scope: FwScope; canEd
   );
 }
 
-function Aliases({ base, canEdit }: { base: string; canEdit: boolean }) {
+function Aliases({ fw, canEdit }: { fw: string; canEdit: boolean }) {
   const { toast } = useToast();
-  const list = usePoll(() => pve.get<any[]>(`${base}/aliases`), 0, [base]);
+  const list = usePoll(() => pve.get<any[]>(`${fw}/aliases`), 0, [fw]);
   const [edit, setEdit] = useState<any | "new" | null>(null);
   const [del, setDel] = useState<any | null>(null);
   return (
@@ -237,8 +237,8 @@ function Aliases({ base, canEdit }: { base: string; canEdit: boolean }) {
             initial={edit === "new" ? undefined : edit}
             onCancel={() => setEdit(null)}
             onSubmit={async (_c, v) => {
-              if (edit === "new") await pve.post(`${base}/aliases`, { name: v.name, cidr: v.cidr, comment: v.comment || undefined });
-              else await pve.put(`${base}/aliases/${edit.name}`, { cidr: v.cidr, comment: v.comment ?? "", rename: v.name !== edit.name ? v.name : undefined });
+              if (edit === "new") await pve.post(`${fw}/aliases`, { name: v.name, cidr: v.cidr, comment: v.comment || undefined });
+              else await pve.put(`${fw}/aliases/${edit.name}`, { cidr: v.cidr, comment: v.comment ?? "", rename: v.name !== edit.name ? v.name : undefined });
               toast("Alias enregistré", "ok");
               setEdit(null);
               list.refresh();
@@ -246,16 +246,16 @@ function Aliases({ base, canEdit }: { base: string; canEdit: boolean }) {
           />
         </Modal>
       )}
-      {del && <Confirm title={`Supprimer l'alias ${del.name} ?`} danger confirmLabel="Supprimer" onConfirm={async () => { try { await pve.del(`${base}/aliases/${del.name}`); list.refresh(); } catch (e) { toast(`${(e as Error).message}. Retire d'abord l'alias des règles qui l'utilisent.`, "error"); } }} onClose={() => setDel(null)}><p>Les règles qui l&apos;utilisent ne fonctionneront plus.</p></Confirm>}
+      {del && <Confirm title={`Supprimer l'alias ${del.name} ?`} danger confirmLabel="Supprimer" onConfirm={async () => { try { await pve.del(`${fw}/aliases/${del.name}`); list.refresh(); } catch (e) { toast(`${(e as Error).message}. Retire d'abord l'alias des règles qui l'utilisent.`, "error"); } }} onClose={() => setDel(null)}><p>Les règles qui l&apos;utilisent ne fonctionneront plus.</p></Confirm>}
     </>
   );
 }
 
-function IpSets({ base, canEdit }: { base: string; canEdit: boolean }) {
+function IpSets({ fw, canEdit }: { fw: string; canEdit: boolean }) {
   const { toast } = useToast();
-  const sets = usePoll(() => pve.get<any[]>(`${base}/ipset`), 0, [base]);
+  const sets = usePoll(() => pve.get<any[]>(`${fw}/ipset`), 0, [fw]);
   const [cur, setCur] = useState<string>("");
-  const entries = usePoll(() => (cur ? pve.get<any[]>(`${base}/ipset/${cur}`) : Promise.resolve([])), 0, [cur]);
+  const entries = usePoll(() => (cur ? pve.get<any[]>(`${fw}/ipset/${cur}`) : Promise.resolve([])), 0, [cur]);
   const [newSet, setNewSet] = useState(false);
   const [newEntry, setNewEntry] = useState(false);
   const [del, setDel] = useState<{ kind: "set" | "entry"; name: string } | null>(null);
@@ -293,7 +293,7 @@ function IpSets({ base, canEdit }: { base: string; canEdit: boolean }) {
       {newSet && (
         <Modal title="Nouvel IPset" onClose={() => setNewSet(false)}>
           <Form fields={[{ name: "name", label: "Nom", required: true, validate: (x) => (/^[A-Za-z][\w-]{1,62}$/.test(String(x)) ? null : "Lettres, chiffres, - et _.") }, { name: "comment", label: "Commentaire" }]} onCancel={() => setNewSet(false)} onSubmit={async (v) => {
-            await pve.post(`${base}/ipset`, v);
+            await pve.post(`${fw}/ipset`, v);
             setNewSet(false);
             setCur(String(v.name));
             sets.refresh();
@@ -303,7 +303,7 @@ function IpSets({ base, canEdit }: { base: string; canEdit: boolean }) {
       {newEntry && (
         <Modal title={`Ajouter à ${cur}`} onClose={() => setNewEntry(false)}>
           <Form fields={[{ name: "cidr", label: "Adresse ou réseau", required: true, placeholder: "10.0.1.0/24" }, { name: "comment", label: "Commentaire" }, { name: "nomatch", label: "Exclure cette adresse (nomatch)", type: "checkbox" }]} onCancel={() => setNewEntry(false)} onSubmit={async (v) => {
-            await pve.post(`${base}/ipset/${cur}`, v);
+            await pve.post(`${fw}/ipset/${cur}`, v);
             setNewEntry(false);
             entries.refresh();
           }} />
@@ -312,7 +312,7 @@ function IpSets({ base, canEdit }: { base: string; canEdit: boolean }) {
       {del && (
         <Confirm title={del.kind === "set" ? `Supprimer l'IPset ${del.name} ?` : `Retirer ${del.name} ?`} danger confirmLabel="Supprimer" onConfirm={async () => {
           try {
-            if (del.kind === "set") { await pve.del(`${base}/ipset/${del.name}`); setCur(""); sets.refresh(); } else { await pve.del(`${base}/ipset/${cur}/${encodeURIComponent(del.name)}`); entries.refresh(); }
+            if (del.kind === "set") { await pve.del(`${fw}/ipset/${del.name}`); setCur(""); sets.refresh(); } else { await pve.del(`${fw}/ipset/${cur}/${encodeURIComponent(del.name)}`); entries.refresh(); }
           } catch (e) { toast(`${(e as Error).message}${del.kind === "set" ? ". Vide d'abord l'IPset." : ""}`, "error"); }
         }} onClose={() => setDel(null)}><p>{del.kind === "set" ? "L'IPset doit être vide." : "Les règles qui utilisent l'IPset ne couvriront plus cette adresse."}</p></Confirm>
       )}
@@ -320,15 +320,15 @@ function IpSets({ base, canEdit }: { base: string; canEdit: boolean }) {
   );
 }
 
-function Log({ base }: { base: string }) {
-  const log = usePoll(() => pve.get<any[]>(`${base}/log`, { limit: 500 }), 5000, [base]);
+function Log({ fw }: { fw: string }) {
+  const log = usePoll(() => pve.get<any[]>(`${fw}/log`, { limit: 500 }), 5000, [fw]);
   return <div style={{ padding: 16 }}><pre className="log">{(log.data ?? []).map((l) => l.t).join("\n") || "Journal vide. Active la journalisation sur une règle ou dans les options."}</pre></div>;
 }
 
 type Sub = "regles" | "options" | "alias" | "ipsets" | "journal";
 
 /** `base` : chemin du pare-feu, ex. /nodes/pve/qemu/101/firewall. */
-export function FirewallPanel({ base, scope, aclPath, priv, extraTabs }: { base: string; scope: FwScope; aclPath: string; priv: string; extraTabs?: { id: string; label: string; render: () => React.ReactNode }[] }) {
+export function FirewallPanel({ base: fw, scope, aclPath, priv, extraTabs }: { base: string; scope: FwScope; aclPath: string; priv: string; extraTabs?: { id: string; label: string; render: () => React.ReactNode }[] }) {
   const [sub, setSub] = useState<string>("regles");
   const { allowed } = usePermission(aclPath, priv);
   const tabs: { id: string; label: string }[] = [
@@ -339,11 +339,11 @@ export function FirewallPanel({ base, scope, aclPath, priv, extraTabs }: { base:
   return (
     <Panel pad={false} title="Pare-feu" right={!allowed && <span className="small muted">Lecture seule : il te manque le droit {priv}</span>}>
       <div style={{ padding: "0 16px" }}><Tabs value={sub} onChange={setSub} tabs={tabs} /></div>
-      {(sub as Sub) === "regles" && <Rules base={base} scope={scope} canEdit={allowed} groupsBase={scope === "cluster" ? base : "/cluster/firewall"} />}
-      {(sub as Sub) === "options" && <Options base={base} scope={scope} canEdit={allowed} />}
-      {(sub as Sub) === "alias" && <Aliases base={base} canEdit={allowed} />}
-      {(sub as Sub) === "ipsets" && <IpSets base={base} canEdit={allowed} />}
-      {(sub as Sub) === "journal" && <Log base={base} />}
+      {(sub as Sub) === "regles" && <Rules fw={fw} scope={scope} canEdit={allowed} groupsFw={scope === "cluster" ? fw : "/cluster/firewall"} />}
+      {(sub as Sub) === "options" && <Options fw={fw} scope={scope} canEdit={allowed} />}
+      {(sub as Sub) === "alias" && <Aliases fw={fw} canEdit={allowed} />}
+      {(sub as Sub) === "ipsets" && <IpSets fw={fw} canEdit={allowed} />}
+      {(sub as Sub) === "journal" && <Log fw={fw} />}
       {extraTabs?.find((t) => t.id === sub)?.render()}
     </Panel>
   );

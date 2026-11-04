@@ -50,8 +50,11 @@ const ALIAS_VALUES = {
   "ctx.type": ["qemu", "lxc"],
   "p.action": ["start", "shutdown", "reboot", "stop"],
 };
-// Préfixes stockés dans une variable avant d'être utilisés.
+// Préfixes stockés dans une variable avant d'être utilisés. Une liste = plusieurs chemins possibles
+// (le composant de pare-feu sert pour une machine, un nœud et le datacenter).
 const PREFIXES = {
+  fw: ["/nodes/${node}/${type}/${vmid}/firewall", "/nodes/${node}/firewall", "/cluster/firewall"],
+  groupsFw: "/cluster/firewall",
   base: "/nodes/${node}/${type}/${vmid}",
   "ctx.base": "/nodes/${node}/${type}/${vmid}",
   b: "/nodes/${node}",
@@ -250,10 +253,16 @@ function findCalls() {
     for (const [re, pick] of patterns) {
       for (const m of src.matchAll(re)) {
         const [method, raw] = pick(m);
-        let p = raw === "base" ? "${base}" : raw.slice(1, -1);
-        for (const [k, v] of Object.entries(PREFIXES)) p = p.replace(new RegExp(`^\\$\\{${k}\\}`), v);
-        if (!p.startsWith("/")) continue;
-        calls.push({ method, path: p, file: path.relative(ROOT, f) });
+        const p0 = raw === "base" ? "${base}" : raw.slice(1, -1);
+        let variants = [p0];
+        for (const [k, v] of Object.entries(PREFIXES)) {
+          const re = new RegExp(`^\\$\\{${k.replace(".", "\\.")}\\}`);
+          variants = variants.flatMap((x) => (re.test(x) ? (Array.isArray(v) ? v : [v]).map((val) => x.replace(re, val)) : [x]));
+        }
+        for (const p of variants) {
+          if (!p.startsWith("/")) continue;
+          calls.push({ method, path: p, file: path.relative(ROOT, f), multi: variants.length > 1 });
+        }
       }
     }
   }
@@ -295,7 +304,7 @@ async function main() {
   for (const c of calls) {
     const seg = codeSegments(c.path);
     const hits = endpoints.filter((e) => e.method === c.method && matches(e.path, seg));
-    if (!hits.length) unmatched.push(c);
+    if (!hits.length && !c.multi) unmatched.push(c);
     for (const h of hits) {
       const k = `${h.method} ${h.path}`;
       if (!usedBy.has(k)) usedBy.set(k, new Set());
