@@ -7,7 +7,7 @@
 Une interface web simple pour Proxmox VE, avec un écran de monitoring, des alertes et un serveur MCP pour Claude.
 
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-e57000)](LICENSE)
-![Proxmox VE 8](https://img.shields.io/badge/Proxmox%20VE-8.x-e57000)
+![Proxmox VE 8 et 9](https://img.shields.io/badge/Proxmox%20VE-8.x%20%7C%209.x-e57000)
 ![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-262626)
 ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-262626)
 
@@ -19,7 +19,7 @@ Une interface web simple pour Proxmox VE, avec un écran de monitoring, des aler
 
 MyProxmox se branche sur l'API de ton serveur Proxmox et te donne une vue claire de ce qui s'y passe : l'état des machines, leurs adresses IP, la santé des disques, les sauvegardes manquantes, les tentatives de connexion suspectes. Il te prévient sur Discord, ntfy ou dans le navigateur quand quelque chose casse, peut rester affiché sur une TV en mode monitoring, et laisse Claude répondre à tes questions sur le serveur.
 
-Il complète l'interface officielle sans la remplacer. Les réglages risqués (réseau, disques, permissions) restent dans Proxmox, où tu les fais en connaissance de cause.
+Depuis la version 2, il couvre presque tout ce que fait l'interface officielle (machines, nœuds, datacenter, stockage, permissions), avec des textes en français, des explications à côté des réglages et une confirmation avant chaque action risquée. Le détail est dans [Parité avec Proxmox](#parité-avec-proxmox).
 
 ## Sommaire
 
@@ -29,11 +29,13 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 - [Première configuration](#première-configuration)
 - [Claude et MCP](#claude-et-mcp)
 - [Écran de monitoring](#écran-de-monitoring)
+- [Comptes MyProxmox](#comptes-myproxmox)
 - [Alertes et notifications](#alertes-et-notifications)
 - [Sécurité](#sécurité)
 - [Variables d'environnement](#variables-denvironnement)
 - [Mises à jour](#mises-à-jour)
 - [Développement](#développement)
+- [Parité avec Proxmox](#parité-avec-proxmox)
 - [Feuille de route](#feuille-de-route)
 
 ## Fonctions
@@ -41,17 +43,20 @@ Il complète l'interface officielle sans la remplacer. Les réglages risqués (r
 | | |
 |---|---|
 | Vue d'ensemble | CPU, RAM, swap, attente disque, charge, graphes de la dernière heure, plus gros consommateurs |
-| Machines | Liste avec IP, tags, dernière sauvegarde ; démarrer, éteindre, redémarrer, actions groupées |
-| Fiche machine | Consommation, réseau (IP, MAC, pont, VLAN), ressources, tags, snapshots, sauvegardes et restauration |
-| Création | Conteneur LXC (modèle, IP fixe ou DHCP) et VM (ISO, disque, pont) |
-| Serveur | Services système, santé SMART, usure des SSD, pools ZFS, mises à jour, certificats, DNS |
-| Stockage | Occupation, contenu, téléchargement d'ISO et de modèles, estimation du remplissage |
+| Machines | Liste triable avec IP, nœud, tags, dernière sauvegarde ; actions groupées (démarrer, éteindre, redémarrer, snapshot, sauvegarde, migration, tags) ; arbre des ressources à gauche (serveurs, pools, tags) avec clic droit |
+| Fiche machine | Tout ce que fait Proxmox : matériel complet (disques, CD, réseau, CPU, mémoire, UEFI, TPM, USB, PCI, série, audio, RNG, VirtIO-FS), Cloud-Init, options, ordre de boot, historique des tâches, notes en Markdown, snapshots en arbre, sauvegardes et restauration (fichiers isolés depuis PBS), réplication, migration, clonage, modèles, pare-feu, permissions, agent invité |
+| Console | Écran des VM (noVNC) et terminal des conteneurs (xterm.js) directement dans MyProxmox, par un relais WebSocket authentifié |
+| Création | Assistants complets VM et conteneur (avec récapitulatif), mode simple d'une page, création depuis un modèle |
+| Nœud | Tout ce que Proxmox permet sur un nœud : résumé et alimentation (double confirmation), tout démarrer / arrêter / migrer, shell intégré, réseau en édition complète avec diff avant application, DNS, hosts, fuseau, certificats et ACME, mises à jour (journal des changements, mise à niveau dans le shell, dépôts APT), disques (SMART, GPT, effacement, LVM, LVM-thin, répertoires, assistant ZFS), Ceph, services, journal en direct, tâches, abonnement, pare-feu |
+| Datacenter | Résumé du cluster (créer, informations de jonction, rejoindre), options, stockages de tous types avec recherche des partages, sauvegardes planifiées (machines, pools, tags, exclusions, rétention, exécuter maintenant), réplication, permissions (utilisateurs, groupes, pools, rôles avec privilèges expliqués, ACL en arbre, domaines LDAP/AD/OpenID, 2FA TOTP/WebAuthn/codes de récupération, jetons API), HA, SDN, ACME, métriques, notifications, mappings, pare-feu et groupes de sécurité |
+| Stockage | Résumé avec graphe sur 1 jour, 1 semaine, 1 mois et 1 an, et date estimée de remplissage ; envoi d'ISO, de modèles et de snippets depuis le navigateur (relayé en flux, barre de progression, somme de contrôle) ; téléchargement depuis une adresse ; sauvegardes (notes, protection, restauration, fichiers PBS, suppression groupée, rétention simulée avant application) ; disques orphelins ; espace, déduplication et vérifications de Proxmox Backup Server |
 | Réseau | Interfaces, ponts, inventaire des IP de toutes les machines, export CSV |
 | Sauvegardes | Couverture par machine, tâches planifiées, snapshots oubliés |
 | Sécurité | Comptes sans 2FA, jetons API, pare-feu, certificats, échecs de connexion par IP |
 | Alertes | Règles réglables, cloche, notifications Windows, Discord, ntfy, webhook |
 | Monitoring | Écran plein écran en lecture seule pour une TV, ouvert par un lien secret |
-| MCP | 13 outils pour Claude, clés révocables en lecture ou en actions, journal |
+| MCP | 24 outils pour Claude (machines, nœuds, datacenter, HA, SDN, Ceph, pare-feu, permissions, réplication, PBS), clés révocables en lecture ou en actions, journal |
+| Accessibilité | Navigation au clavier, focus visible, libellés sur les boutons à icône, pages chargées à la demande (premier écran sous 100 Ko gzip) |
 
 Tout est organisé en modules (monitoring, alertes, MCP, sécurité, sauvegardes, mises à jour) que tu peux couper dans les paramètres.
 
@@ -78,6 +83,14 @@ Ces informations existent dans l'API Proxmox, mais elles sont éparpillées dans
 | Audit de sécurité | Santé SMART, usure des SSD, ZFS |
 | ![Claude et MCP](docs/images/claude.png) | ![Réseau](docs/images/reseau.png) |
 | Clés MCP et tutoriel | Inventaire réseau |
+| ![Matériel d'une VM](docs/images/machine-materiel.png) | ![Snapshots en arbre](docs/images/machine-snapshots.png) |
+| Matériel d'une VM | Snapshots en arbre |
+| ![Console intégrée](docs/images/machine-console.png) | ![Assistant de création](docs/images/creer-assistant.png) |
+| Console intégrée | Assistant de création |
+| ![Réseau du nœud](docs/images/noeud-reseau.png) | ![Journal du nœud](docs/images/noeud-journal.png) |
+| Réseau du nœud : diff avant application | Journal système en direct |
+| ![Datacenter](docs/images/datacenter.png) | ![Permissions](docs/images/datacenter-permissions.png) |
+| Datacenter : cluster et ressources | Permissions |
 
 Les captures viennent du mode démo, avec de fausses données. Tu peux l'essayer [en ligne](https://myproxmox.vercel.app) ou en local (voir plus bas).
 
@@ -118,7 +131,7 @@ npm ci && npm run build
 npm run demo
 ```
 
-Le mode démo utilise un faux Proxmox et ses propres données (`data-demo/`). N'importe quel identifiant fonctionne.
+Le mode démo utilise un faux Proxmox et ses propres données (`data-demo/`). N'importe quel identifiant Proxmox fonctionne. Côté comptes MyProxmox, essaie `tv-salon` (monitoring) ou `lea` (lecture), mot de passe `demo-monitoring`.
 
 ## Première configuration
 
@@ -140,7 +153,7 @@ MyProxmox embarque un serveur [MCP](https://modelcontextprotocol.io) (transport 
 Claude ──MCP──▶ MyProxmox ──jeton de service──▶ Proxmox
 ```
 
-Les outils en lecture : `etat_general`, `lister_machines`, `details_machine`, `alertes_actives`, `sante_serveur`, `stockage`, `sauvegardes`, `securite`, `reseau`, `taches_recentes`. Avec une clé « actions » : `alimentation_machine` (démarrer, éteindre, redémarrer), `snapshot_machine`, `sauvegarder_machine`. Supprimer, forcer un arrêt ou restaurer reste impossible par MCP.
+Les outils en lecture : `etat_general`, `lister_machines`, `details_machine`, `alertes_actives`, `sante_serveur`, `stockage`, `sauvegardes`, `securite`, `reseau`, `taches_recentes`, `datacenter`, `haute_disponibilite`, `reseau_logiciel`, `ceph`, `pare_feu`, `permissions`, `replication`, `proxmox_backup_server`. Avec une clé « actions » : `alimentation_machine` (démarrer, éteindre, redémarrer), `snapshot_machine`, `sauvegarder_machine`, `migrer_machine`, `cloner_modele` (depuis un modèle seulement), `tag_machine`. Supprimer, forcer un arrêt, restaurer ou toucher aux permissions et au réseau reste impossible par MCP.
 
 Mise en route rapide :
 
@@ -152,7 +165,42 @@ Le tutoriel pas à pas, avec des exemples de questions, est dans [docs/MCP.md](d
 
 ## Écran de monitoring
 
-Dans **Paramètres > Écran de monitoring**, crée un lien secret et ouvre-le sur la TV (F11 pour le plein écran). L'écran se rafraîchit toutes les 5 secondes, garde l'affichage allumé, passe au rouge quand une alerte critique arrive et ne propose aucun bouton d'action. Il fonctionne sans compte Proxmox ; un nouveau lien désactive l'ancien.
+Dans **Paramètres > Écran de monitoring**, crée un lien secret et ouvre-le sur la TV (F11 pour le plein écran). L'écran est en lecture seule, garde l'affichage allumé, se recharge toutes les 6 h et reste lisible de loin en 1080p, 1440p et 4K (et sur une tablette en portrait). Un nouveau lien désactive l'ancien.
+
+Ce qu'il affiche :
+
+| Vue | Contenu |
+|---|---|
+| Vue générale | Chiffres clés, processeur (charge 1/5/15, attente disque, pression PSI), mémoire (utilisée, cache, libre, KSM, swap), alertes actives avec leur durée, nœuds (version, noyau, disque système, services critiques, mises à jour), stockage |
+| Machines | Toutes les VM et conteneurs : statut, CPU avec mini graphe, RAM, débit réseau, uptime, IP, tags ; tri au choix, regroupement par tag ou par nœud |
+| Réseau | Débit par pont et total des interfaces physiques, machines les plus actives, débit sur 24 h, quorum et ressources HA, activité en direct (tâches Proxmox, actions faites via MyProxmox et le MCP) |
+| Stockage et disques | Occupation, date estimée de remplissage, stockages hors ligne, santé SMART, usure des SSD, température, lectures et écritures, pools ZFS |
+| Sauvegardes et sécurité | Dernière et prochaine exécution de chaque sauvegarde planifiée, machines non couvertes, échecs de connexion sur 24 h, certificats qui expirent |
+| Historique | CPU, RAM, réseau, attente disque et charge sur 24 h et 7 jours |
+
+Les vues tournent toutes seules (15, 30 ou 60 s, ou vue fixe), avec une barre de progression. En alerte critique, le bandeau devient rouge et pulse, le widget concerné est encadré, et un son peut prévenir (désactivé par défaut, à activer écran par écran). Si les données ne sont plus fraîches, l'écran l'affiche clairement.
+
+**Mode mur** : un administrateur choisit les widgets, leur ordre et leur taille sur une grille de 12 colonnes (bouton « Créer un mur », glisser-déposer). Chaque disposition a un nom et s'ouvre avec `?layout=nom`, par exemple `/monitoring?key=…&layout=salon`. Les dispositions sont enregistrées dans `data/monitoring-layouts.json`.
+
+Côté performances, l'écran fait un seul appel à `/api/monitoring` toutes les 5 s ; l'historique, SMART, les sauvegardes et la sécurité sont gardés en cache par le serveur et rafraîchis toutes les 1 à 15 minutes.
+
+| | |
+|---|---|
+| ![Machines](docs/images/monitoring-machines.png) | ![Réseau](docs/images/monitoring-reseau.png) |
+| ![Stockage et disques](docs/images/monitoring-stockage.png) | ![Historique](docs/images/monitoring-historique.png) |
+
+Tu peux aussi donner à quelqu'un un **compte MyProxmox** (voir plus bas) au rôle « monitoring » : il se connecte et arrive directement sur cet écran.
+
+## Comptes MyProxmox
+
+À côté des comptes Proxmox, MyProxmox gère ses propres comptes, sans rien créer dans Proxmox. Ils servent à regarder sans toucher :
+
+| Rôle | Ce que la personne voit |
+|---|---|
+| Monitoring | L'écran de monitoring, et rien d'autre (pas de barre latérale, l'API refuse le reste avec une erreur 403) |
+| Lecture | Toutes les pages, sans aucune action possible |
+
+Ces comptes lisent Proxmox avec le compte de service. Ils se gèrent dans **Paramètres > Comptes MyProxmox** : création, validation des inscriptions, changement de rôle, désactivation, nouveau mot de passe, suppression. L'inscription libre est fermée par défaut ; tu peux l'ouvrir avec validation par un administrateur (une notification arrive alors à chaque demande) ou sans validation (rôle monitoring seulement). Chaque personne peut activer la double authentification (TOTP) depuis **Mon compte**.
 
 ## Alertes et notifications
 
@@ -177,6 +225,7 @@ Les seuils se règlent dans **Alertes > Règles**. Les notifications arrivent da
 - Le navigateur ne voit jamais de jeton Proxmox : il reçoit un cookie de session `HttpOnly`, et le ticket reste côté serveur.
 - Tout est filtré par plage IP, MCP et monitoring compris. Le PC qui héberge l'app garde toujours l'accès en local.
 - Les clés MCP et le lien de monitoring ne sont stockés que sous forme d'empreinte SHA-256.
+- Les mots de passe des comptes MyProxmox sont hachés avec scrypt (sel par compte) : 10 caractères minimum, les 1000 mots de passe les plus courants refusés, 5 échecs par minute et par IP au plus.
 - L'assistant de configuration se verrouille une fois terminé.
 - Le site envoie `X-Robots-Tag: noindex` et un `robots.txt` qui bloque l'indexation.
 
@@ -209,6 +258,9 @@ npm run dev        # serveur en mode démo + Vite sur http://localhost:5173
 npm run typecheck
 npm run build      # web/dist, server/dist, bridge/dist
 npm run build:demo # vitrine + démo statique (web/dist-demo), celle publiée sur Vercel
+npx playwright test # une passe par page en mode démo (lance le serveur tout seul), aussi lancée par la CI GitHub
+node scripts/api-inventory.mjs # met à jour docs/PARITE.md
+node scripts/bundle-size.mjs   # vérifie que le premier écran reste sous 250 Ko gzip
 ```
 
 ```
@@ -221,13 +273,49 @@ scripts/  compilation, lanceurs Windows (mise à jour, démarrage automatique)
 
 La pile : React 19, React Router, Vite, Express 5, le SDK MCP officiel en TypeScript, esbuild. Aucune base de données : la configuration tient dans des fichiers JSON.
 
+## Parité avec Proxmox
+
+MyProxmox compare son code à la liste complète des points d'entrée de l'API Proxmox VE (680 au total). Le détail, chemin par chemin, est dans [docs/PARITE.md](docs/PARITE.md), produit par `node scripts/api-inventory.mjs`.
+
+| Zone | Points d'entrée | Fait | Pas encore couvert | Hors périmètre |
+|---|--:|--:|--:|--:|
+| Datacenter | 203 | 106 | 85 | 12 |
+| Cluster | 60 | 29 | 22 | 9 |
+| Nœud | 173 | 99 | 51 | 23 |
+| VM QEMU | 97 | 64 | 23 | 10 |
+| Conteneur LXC | 62 | 44 | 11 | 7 |
+| Stockage | 33 | 23 | 7 | 3 |
+| Accès | 45 | 28 | 13 | 4 |
+| Pools | 7 | 5 | 2 | 0 |
+| **Total** | **680** | **398** | **214** | **68** |
+
+« Hors périmètre » regroupe ce qui sert à Proxmox lui-même (appels internes, images PNG des graphes, variantes qui font doublon).
+
+### Pas encore couvert
+
+Ce qui reste, regroupé par raison :
+
+| Ce qui manque | Points d'entrée | Pourquoi |
+|---|--:|---|
+| SDN de Proxmox VE 9 : fabrics, prefix-lists, route-maps, pare-feu et IP des VNets, verrou, retour arrière, simulation, état du SDN par nœud | 51 | Nouveautés de Proxmox VE 9, absentes de la 8. Elles arriveront avec une détection de version, comme pour les règles HA. |
+| Ceph : installation, ajout et retrait de moniteurs, managers, MDS et OSD, CephFS, démarrage et arrêt des services, drapeaux, carte CRUSH | 36 | MyProxmox surveille Ceph et gère les pools. L'installation et la maintenance de Ceph restent rares et risquées : fais-les dans l'interface officielle ou avec `pveceph`. |
+| Lecture d'un seul élément (une règle, un utilisateur, une zone...) | 37 | MyProxmox lit la liste complète, qui contient déjà ces informations. Aucune fonction ne manque. |
+| Agent invité avancé : exécuter une commande, lire ou écrire un fichier, blocs mémoire, mise en veille | 10 | Absent de l'interface Proxmox aussi. Exécuter des commandes dans une VM depuis le navigateur demande un garde-fou à concevoir. |
+| Actions groupées de Proxmox VE 9 (`/cluster/bulk-action`), tout suspendre | 5 | MyProxmox fait ses actions groupées machine par machine, ce qui marche aussi en 8.x. |
+| Console SPICE, shell VNC du nœud, envoi de touches, moniteur QEMU | 7 | La console intégrée passe par noVNC et xterm.js. SPICE demande un logiciel sur le PC (virt-viewer). |
+| Migration vers un autre cluster, conteneurs OCI | 4 | Fonctions encore en aperçu dans Proxmox VE 9. |
+| Modèles de CPU personnalisés, drapeaux CPU | 8 | Réglage rare, pour des clusters aux processeurs différents. |
+| Synchronisation des domaines LDAP/AD, connexion OpenID | 7 | La connexion à MyProxmox passe par les domaines PAM et PVE. OpenID demande une redirection à part. |
+| Armer ou désarmer la HA, règles HA de Proxmox VE 9 | 3 | Proxmox VE 9 seulement, en attente de la détection de version. |
+| Modifier un pool par l'ancien chemin `/pools` (PUT et DELETE) | 2 | Nouveau chemin de Proxmox VE 9 ; MyProxmox utilise `/pools/{poolid}`, valable en 8 et 9. |
+| Divers : rapport système du nœud, journal du cluster, réveil réseau (Wake-on-LAN), QDevice, retrait d'un nœud du cluster, valeurs par défaut de vzdump, lecture de la config d'une sauvegarde, références du pare-feu, modification d'une entrée d'IPSet, jetons et 2FA d'un utilisateur précis, déblocage 2FA, allocation de disque brut sur un stockage, copie de volume, export des métriques | 44 | À ajouter au fil des besoins. Pour la plupart, l'équivalent existe ailleurs dans MyProxmox (par exemple la liste des jetons de tous les utilisateurs). |
+
 ## Feuille de route
 
 - Interface en anglais (les textes sont en français pour l'instant)
 - Plusieurs serveurs Proxmox et clusters dans une même interface
-- Prise en charge de Proxmox Backup Server
+- Fonctions de Proxmox VE 9 (SDN avancé, règles HA, actions groupées), avec détection de version
 - Validation dans l'interface des actions demandées par Claude
-- Graphiques sur 7 et 30 jours
 - Image Docker publiée sur GHCR
 
 Les idées et les contributions sont bienvenues, voir [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -240,6 +328,6 @@ Les idées et les contributions sont bienvenues, voir [CONTRIBUTING.md](CONTRIBU
 
 ## In English
 
-MyProxmox is a self-hosted web dashboard for Proxmox VE. It adds what the stock UI keeps buried in menus (every guest IP in one table, SMART health and SSD wear, guests that should be running but aren't, backup coverage, storage fill-up forecasts, failed logins grouped by IP), sends alerts to Discord, ntfy, webhooks or browser notifications, provides a read-only full-screen monitoring view for a wall display, and ships an MCP server so Claude can answer questions about your homelab and, if you allow it, start, stop or snapshot guests.
+MyProxmox is a self-hosted web dashboard for Proxmox VE. It adds what the stock UI keeps buried in menus (every guest IP in one table, SMART health and SSD wear, guests that should be running but aren't, backup coverage, storage fill-up forecasts, failed logins grouped by IP), sends alerts to Discord, ntfy, webhooks or browser notifications, provides a read-only full-screen monitoring view for a wall display, and ships an MCP server so Claude can answer questions about your homelab and, if you allow it, start, stop, snapshot, migrate, clone or tag guests. Since version 2 it covers most of the official UI (guests, nodes, datacenter, storage, permissions), with a per-endpoint parity report in `docs/PARITE.md`.
 
 You log in with your own Proxmox account (2FA supported). Access is restricted to IP ranges you choose. Run it with `MyProxmox.bat` on Windows, `./start.sh` on Linux/macOS, or `docker compose up -d`, then open `http://your-pc:8080`. The UI is in French for now; an English translation is on the roadmap. Licensed under MIT.

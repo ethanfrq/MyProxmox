@@ -4,7 +4,7 @@ import { promises as fs, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { DEFAULT_MODULES, DEFAULT_RULES, type ActivityEntry, type AlertRules, type Channel, type McpLevel, type Modules, type Notification } from "../../shared/types";
+import { DEFAULT_MODULES, DEFAULT_RULES, type ActivityEntry, type AlertRules, type Channel, type McpLevel, type Modules, type Notification, type RegistrationMode } from "../../shared/types";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const DATA_DIR = process.env.MYPROXMOX_DATA ? path.resolve(process.env.MYPROXMOX_DATA) : path.join(ROOT, "data");
@@ -31,6 +31,7 @@ export interface Config {
   channels: Channel[];
   mcpKeys: McpKey[];
   monitoringKeyHash: string | null;
+  registration: RegistrationMode; // inscription libre aux comptes MyProxmox
 }
 
 const CONFIG = () => path.join(DATA_DIR, "config.json");
@@ -47,6 +48,7 @@ function defaults(): Config {
     channels: [],
     mcpKeys: [],
     monitoringKeyHash: null,
+    registration: "off",
   };
 }
 

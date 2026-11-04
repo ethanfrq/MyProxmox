@@ -60,12 +60,17 @@ export function clientIp(req: Request) {
   return normalizeIp(req.socket.remoteAddress ?? "");
 }
 
-export function ipFilter(req: Request, res: Response, next: NextFunction) {
-  const ip = clientIp(req);
+/** Vrai si l'adresse a le droit d'ouvrir MyProxmox. */
+export function ipAllowed(ip: string) {
   const c = getConfig();
   // Avant la configuration, seuls la machine locale et les réseaux privés peuvent ouvrir l'onboarding
   const ranges = c.setupDone ? c.allowedRanges : PRIVATE_RANGES;
   // La machine qui héberge l'app garde toujours l'accès, pour ne jamais s'enfermer dehors
-  if (ip === "127.0.0.1" || ip === "::1" || ranges.some((r) => inRange(ip, r))) return next();
+  return ip === "127.0.0.1" || ip === "::1" || ranges.some((r) => inRange(ip, r));
+}
+
+export function ipFilter(req: Request, res: Response, next: NextFunction) {
+  const ip = clientIp(req);
+  if (ipAllowed(ip)) return next();
   res.status(403).type("text/plain; charset=utf-8").send(`Accès refusé : l'adresse ${ip} n'est pas dans les plages autorisées par MyProxmox.`);
 }

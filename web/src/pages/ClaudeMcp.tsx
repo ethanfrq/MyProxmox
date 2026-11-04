@@ -16,9 +16,20 @@ const TOOLS: { name: string; level: McpLevel; desc: string }[] = [
   { name: "securite", level: "read", desc: "2FA, jetons, pare-feu, échecs de connexion" },
   { name: "reseau", level: "read", desc: "Interfaces, ponts, DNS et IP des machines" },
   { name: "taches_recentes", level: "read", desc: "Dernières tâches et leur résultat" },
+  { name: "datacenter", level: "read", desc: "Cluster, quorum, options, stockages déclarés, sauvegardes planifiées" },
+  { name: "haute_disponibilite", level: "read", desc: "État HA, ressources protégées et groupes" },
+  { name: "reseau_logiciel", level: "read", desc: "Zones, VNets et sous-réseaux du SDN" },
+  { name: "ceph", level: "read", desc: "Santé Ceph, OSD, moniteurs et pools" },
+  { name: "pare_feu", level: "read", desc: "Règles et groupes du pare-feu, du datacenter ou d'une machine" },
+  { name: "permissions", level: "read", desc: "Utilisateurs, groupes et rôles attribués" },
+  { name: "replication", level: "read", desc: "Tâches de réplication et dernière synchronisation" },
+  { name: "proxmox_backup_server", level: "read", desc: "Stockages PBS, espace et nombre de sauvegardes" },
   { name: "alimentation_machine", level: "actions", desc: "Démarrer, éteindre proprement, redémarrer" },
   { name: "snapshot_machine", level: "actions", desc: "Prendre un snapshot" },
   { name: "sauvegarder_machine", level: "actions", desc: "Lancer une sauvegarde immédiate" },
+  { name: "migrer_machine", level: "actions", desc: "Déplacer une machine vers un autre nœud" },
+  { name: "cloner_modele", level: "actions", desc: "Créer une machine depuis un modèle" },
+  { name: "tag_machine", level: "actions", desc: "Ajouter ou retirer un tag" },
 ];
 
 const EXAMPLES = [
@@ -71,7 +82,7 @@ export function ClaudeMcp() {
           <ul className="small" style={{ margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>
             <li>Claude ne voit jamais ton mot de passe ni le jeton Proxmox.</li>
             <li>Une clé <strong>lecture</strong> peut tout consulter. Une clé <strong>actions</strong> peut aussi démarrer, éteindre, redémarrer, prendre un snapshot ou lancer une sauvegarde.</li>
-            <li>Jamais possible via MCP : supprimer, arrêt forcé, restaurer, modifier la configuration.</li>
+            <li>Jamais possible via MCP : supprimer, arrêt forcé, restaurer, modifier la configuration (sauf les tags), les permissions ou le réseau.</li>
             <li>Le MCP n&apos;est accessible que depuis les plages IP autorisées.</li>
           </ul>
         </Panel>
@@ -129,7 +140,7 @@ export function ClaudeMcp() {
               <div>
                 <h3>Récupère le pont MCP</h3>
                 <p className="small" style={{ margin: "0 0 8px" }}>
-                  Claude Desktop lance un petit programme local qui relaie ses demandes vers MyProxmox. Il a besoin de <a href="https://nodejs.org" target="_blank" rel="noreferrer" style={{ color: "var(--orange)" }}>Node.js</a> (déjà installé si Claude Desktop tourne sur le PC de MyProxmox).
+                  Claude Desktop lance un petit programme local qui relaie ses demandes vers MyProxmox. Il a besoin de <a href="https://nodejs.org" target="_blank" rel="noreferrer" style={{ color: "var(--orange-ink)" }}>Node.js</a> (déjà installé si Claude Desktop tourne sur le PC de MyProxmox).
                   Sur un autre ordinateur, télécharge le fichier et note où tu le ranges.
                 </p>
                 <a className="btn btn-sm" href="/downloads/myproxmox-mcp.cjs" download>Télécharger myproxmox-mcp.cjs</a>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Empty, Notice, PageHead, Panel, Status, Tabs, TypeTag } from "../components/ui";
+import { Empty, Notice, PageHead, Panel, Status, Tabs, TypeTag, clickable } from "../components/ui";
 import { Sparkline } from "../components/Sparkline";
 import { CopyButton } from "../components/ui";
 import { api, pve, usePoll } from "../lib/api";
@@ -47,7 +47,7 @@ export function Network() {
             <div className="table-wrap"><table className="table">
               <thead><tr><th>ID</th><th>Machine</th><th>Statut</th><th>IPv4</th><th>MAC</th><th>Pont</th><th>VLAN</th><th>Pare-feu</th><th>Source</th></tr></thead>
               <tbody>{rows.map((r) => (
-                <tr key={r.vmid} className="clickable" onClick={() => navigate(`/machines/${r.node}/${r.type}/${r.vmid}`)}>
+                <tr key={r.vmid} className="clickable" {...clickable(() => navigate(`/machines/${r.node}/${r.type}/${r.vmid}`))}>
                   <td className="mono muted">{r.vmid}</td>
                   <td className="name"><TypeTag type={r.type} /> <strong style={{ marginLeft: 6 }}>{r.name}</strong></td>
                   <td><Status status={r.status} /></td>

@@ -111,7 +111,7 @@ export function Settings() {
               </p>
               <div className="kv">
                 <div>Version installée</div><div className="mono">{s.version}</div>
-                <div>Code source</div><div><a href={REPO_URL} target="_blank" rel="noreferrer" style={{ color: "var(--orange)" }}>{REPO_URL.replace("https://", "")}</a></div>
+                <div>Code source</div><div><a href={REPO_URL} target="_blank" rel="noreferrer" style={{ color: "var(--orange-ink)" }}>{REPO_URL.replace("https://", "")}</a></div>
               </div>
             </div>
           </Panel>

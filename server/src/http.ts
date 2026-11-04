@@ -40,6 +40,9 @@ export interface Target {
 }
 
 export function request(target: Target, method: Method, path: string, headers: Record<string, string>, params?: Params): Promise<any> {
+  // _full=1 : renvoie aussi les champs à côté de « data » (ex. « changes » du réseau d'un nœud)
+  const full = !!params?._full;
+  if (full) params = Object.fromEntries(Object.entries(params!).filter(([k]) => k !== "_full"));
   const qs = encode(params);
   const hasBody = method === "POST" || method === "PUT";
   const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}${!hasBody && qs ? `?${qs}` : ""}`);
@@ -68,7 +71,7 @@ export function request(target: Target, method: Method, path: string, headers: R
           const msg = fields || json?.message || (status === 401 ? "identifiants refusés par Proxmox" : reason || text.trim().slice(0, 200) || `erreur ${status}`);
           reject(new PveError(status, String(msg).trim()));
         } else {
-          resolve(json?.data);
+          resolve(full ? { data: json?.data, changes: json?.changes ?? null } : json?.data);
         }
       });
     });
@@ -76,5 +79,52 @@ export function request(target: Target, method: Method, path: string, headers: R
     req.on("error", (e: NodeJS.ErrnoException) => reject(new PveError(502, HINTS[e.code ?? ""] ?? e.message)));
     if (hasBody) req.write(qs);
     req.end();
+  });
+}
+
+/** Requête GET dont la réponse est relayée telle quelle (téléchargement de fichier). */
+export function requestRaw(target: Target, path: string, headers: Record<string, string>, params?: Params): Promise<http.IncomingMessage> {
+  const qs = encode(params);
+  const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}${qs ? `?${qs}` : ""}`);
+  return new Promise((resolve, reject) => {
+    const lib = url.protocol === "https:" ? https : http;
+    const req = lib.request(url, { method: "GET", headers, rejectUnauthorized: !target.insecureTls, timeout: 60000 }, (res) => {
+      if ((res.statusCode ?? 500) >= 400) {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (c) => (text += c));
+        res.on("end", () => reject(new PveError(res.statusCode ?? 500, (res.statusMessage || text.slice(0, 200) || "erreur").trim())));
+        return;
+      }
+      resolve(res);
+    });
+    req.on("timeout", () => req.destroy(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })));
+    req.on("error", (e: NodeJS.ErrnoException) => reject(new PveError(502, HINTS[e.code ?? ""] ?? e.message)));
+    req.end();
+  });
+}
+
+/**
+ * Envoie un flux (téléversement multipart) à Proxmox sans le charger en mémoire :
+ * le corps de la requête du navigateur est relayé tel quel, en-têtes compris.
+ */
+export function streamUpload(target: Target, path: string, headers: Record<string, string>, body: NodeJS.ReadableStream): Promise<any> {
+  const url = new URL(`${target.url.replace(/\/+$/, "")}/api2/json${path}`);
+  return new Promise((resolve, reject) => {
+    const lib = url.protocol === "https:" ? https : http;
+    const req = lib.request(url, { method: "POST", headers, rejectUnauthorized: !target.insecureTls }, (res) => {
+      let text = "";
+      res.setEncoding("utf8");
+      res.on("data", (c) => (text += c));
+      res.on("end", () => {
+        let json: any = null;
+        try { json = JSON.parse(text); } catch { /* réponse non JSON */ }
+        if ((res.statusCode ?? 500) >= 400) reject(new PveError(res.statusCode ?? 500, String(json?.message ?? res.statusMessage ?? "envoi refusé").trim()));
+        else resolve(json?.data);
+      });
+    });
+    req.on("error", (e: NodeJS.ErrnoException) => reject(new PveError(502, HINTS[e.code ?? ""] ?? e.message)));
+    body.on("error", (e) => req.destroy(e as Error));
+    body.pipe(req);
   });
 }

@@ -1,7 +1,8 @@
 // Petits composants réutilisables : boutons, panneaux, jauges, onglets, fenêtres.
-import { createContext, useCallback, useContext, useState, type ReactNode, type ButtonHTMLAttributes } from "react";
+import { cloneElement, createContext, isValidElement, useCallback, useContext, useEffect, useId, useRef, useState, type ReactElement, type ReactNode, type ButtonHTMLAttributes } from "react";
 import { pve } from "../lib/api";
 import { STATUS_LABEL, TASK_LABEL } from "../../../shared/format";
+import { TaskLogModal } from "./TaskLog";
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "dark" | "danger" | "ghost" | "default";
@@ -14,7 +15,7 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function Button({ variant = "default", size, icon, busy, block, children, className = "", disabled, ...rest }: BtnProps) {
   const cls = ["btn", variant !== "default" && `btn-${variant}`, size && `btn-${size}`, block && "btn-block", className].filter(Boolean).join(" ");
   return (
-    <button className={cls} disabled={disabled || busy} {...rest}>
+    <button className={cls} disabled={disabled || busy} aria-label={rest["aria-label"] ?? (!children && typeof rest.title === "string" ? rest.title : undefined)} aria-busy={busy || undefined} {...rest}>
       {busy ? <span className="spin" /> : icon}
       {children}
     </button>
@@ -88,13 +89,29 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { id: 
 }
 
 export function Field({ label, help, children, full }: { label: string; help?: ReactNode; children: ReactNode; full?: boolean }) {
+  // Relie le libellé au champ (accessibilité, lecteurs d'écran, tests)
+  const auto = useId();
+  const child = isValidElement(children) ? (children as ReactElement<{ id?: string }>) : null;
+  const id = child?.props.id ?? auto;
+  const linked = child && typeof child.type === "string" && ["input", "select", "textarea"].includes(child.type) ? cloneElement(child, { id }) : null;
   return (
     <div className={`field ${full ? "full" : ""}`}>
-      <label>{label}</label>
-      {children}
+      <label htmlFor={linked ? id : undefined}>{label}</label>
+      {linked ?? children}
       {help && <div className="help">{help}</div>}
     </div>
   );
+}
+
+/** Rend une ligne ou une carte cliquable aussi au clavier (Tab puis Entrée ou Espace). */
+export function clickable(fn: () => void) {
+  return {
+    onClick: fn,
+    tabIndex: 0,
+    onKeyDown: (e: { key: string; target: EventTarget; currentTarget: EventTarget; preventDefault: () => void }) => {
+      if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fn(); }
+    },
+  };
 }
 
 export function Notice({ kind = "info", children }: { kind?: "info" | "error" | "ok" | "warn"; children: ReactNode }) {
@@ -103,6 +120,50 @@ export function Notice({ kind = "info", children }: { kind?: "info" | "error" | 
 
 export function Empty({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>;
+}
+
+// ── Fenêtre simple (formulaires, détails) ───────────────────────────
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Clavier dans une fenêtre : focus à l'ouverture, Tab reste dedans, Échap ferme, focus rendu à la fermeture. */
+function useDialog(onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    const box = ref.current;
+    if (box && !box.contains(document.activeElement)) (box.querySelector<HTMLElement>(`.modal-body ${FOCUSABLE}`) ?? box.querySelector<HTMLElement>(FOCUSABLE) ?? box).focus();
+    const key = (e: KeyboardEvent) => {
+      if (!box) return;
+      // Seule la fenêtre du dessus réagit
+      const all = document.querySelectorAll(".modal");
+      if (all[all.length - 1] !== box) return;
+      if (e.key === "Escape") { e.stopPropagation(); close.current(); return; }
+      if (e.key !== "Tab") return;
+      const items = [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("keydown", key); if (before && document.contains(before)) before.focus(); };
+  }, []);
+  return ref;
+}
+
+export function Modal({ title, children, onClose, wide, foot }: { title: ReactNode; children: ReactNode; onClose: () => void; wide?: boolean; foot?: ReactNode }) {
+  const ref = useDialog(onClose);
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div ref={ref} tabIndex={-1} className={`modal ${wide ? "modal-wide" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={typeof title === "string" ? title : undefined}>
+        <div className="modal-head"><h2>{title}</h2></div>
+        <div className="modal-body">{children}</div>
+        {foot && <div className="modal-foot">{foot}</div>}
+      </div>
+    </div>
+  );
 }
 
 // ── Fenêtre de confirmation ────────────────────────────────────────
@@ -115,9 +176,10 @@ export function Confirm({
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const blocked = requireText !== undefined && typed !== requireText;
+  const ref = useDialog(onClose);
   return (
     <div className="modal-bg" onClick={onClose}>
-      <div className={`modal ${danger ? "danger" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+      <div ref={ref} tabIndex={-1} className={`modal ${danger ? "danger" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={title}>
         <div className="modal-head"><h2>{title}</h2></div>
         <div className="modal-body stack">
           {children}
@@ -147,36 +209,45 @@ export function Confirm({
 }
 
 // ── Notifications + suivi des tâches Proxmox ───────────────────────
-interface Toast { id: number; kind: "info" | "ok" | "error"; text: string }
+interface ToastAction { label: string; onClick: () => void }
+interface Toast { id: number; kind: "info" | "ok" | "error"; text: string; action?: ToastAction }
 interface ToastApi {
-  toast: (text: string, kind?: Toast["kind"]) => void;
+  toast: (text: string, kind?: Toast["kind"], action?: ToastAction) => void;
   // Suit une tâche Proxmox (UPID) jusqu'à la fin et prévient l'utilisateur.
   watch: (node: string, upid: string, label?: string, onDone?: () => void) => void;
+  // Ouvre le journal d'une tâche dans une fenêtre.
+  showLog: (upid: string, node?: string) => void;
 }
-const Ctx = createContext<ToastApi>({ toast: () => {}, watch: () => {} });
+const Ctx = createContext<ToastApi>({ toast: () => {}, watch: () => {}, showLog: () => {} });
 export const useToast = () => useContext(Ctx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [list, setList] = useState<Toast[]>([]);
+  const [log, setLog] = useState<{ upid: string; node?: string } | null>(null);
 
-  const toast = useCallback((text: string, kind: Toast["kind"] = "info") => {
+  const dismiss = useCallback((id: number) => setList((l) => l.filter((t) => t.id !== id)), []);
+  const toast = useCallback((text: string, kind: Toast["kind"] = "info", action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setList((l) => [...l, { id, kind, text }]);
-    setTimeout(() => setList((l) => l.filter((t) => t.id !== id)), kind === "error" ? 8000 : 4000);
-  }, []);
+    // Au plus 4 notifications à l'écran : les plus anciennes laissent la place
+    setList((l) => [...l, { id, kind, text, action }].slice(-4));
+    setTimeout(() => dismiss(id), kind === "error" || action ? 8000 : 4000);
+  }, [dismiss]);
+
+  const showLog = useCallback((upid: string, node?: string) => setLog({ upid, node }), []);
 
   const watch = useCallback((node: string, upid: string, label?: string, onDone?: () => void) => {
     const type = upid.split(":")[5] ?? "";
     const name = label ?? TASK_LABEL[type] ?? type;
-    toast(`${name} : en cours…`);
+    const action = { label: "Voir le journal", onClick: () => showLog(upid, node) };
+    toast(`${name} : en cours…`, "info", action);
     let tries = 0;
     const tick = async () => {
       tries++;
       try {
         const st = await pve.get(`/nodes/${node}/tasks/${encodeURIComponent(upid)}/status`);
         if (st.status === "stopped") {
-          if (st.exitstatus === "OK") toast(`${name} : terminé`, "ok");
-          else toast(`${name} : échec (${st.exitstatus})`, "error");
+          if (st.exitstatus === "OK") toast(`${name} : terminé`, "ok", action);
+          else toast(`${name} : échec (${st.exitstatus})`, "error", action);
           onDone?.();
           return;
         }
@@ -186,14 +257,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       if (tries < 300) setTimeout(tick, 1500);
     };
     setTimeout(tick, 800);
-  }, [toast]);
+  }, [toast, showLog]);
 
   return (
-    <Ctx.Provider value={{ toast, watch }}>
+    <Ctx.Provider value={{ toast, watch, showLog }}>
       {children}
       <div className="toasts" aria-live="polite">
-        {list.map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.text}</div>)}
+        {list.map((t) => (
+          <div key={t.id} className={`toast ${t.kind}`}>
+            <span>{t.text}</span>
+            {t.action && <button className="toast-action" onClick={() => { t.action!.onClick(); dismiss(t.id); }}>{t.action.label}</button>}
+          </div>
+        ))}
       </div>
+      {log && <TaskLogModal upid={log.upid} node={log.node} onClose={() => setLog(null)} />}
     </Ctx.Provider>
   );
 }

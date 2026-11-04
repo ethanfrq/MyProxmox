@@ -2,7 +2,7 @@
 //  - userCall : avec le ticket de la personne connectée (ses propres droits Proxmox) ;
 //  - serviceCall : avec le jeton de service (alertes, écran de monitoring, MCP) ;
 //  - en mode démo, tout passe par le faux Proxmox.
-import { request, PveError, type Method, type Params, type Target } from "./http";
+import { request, requestRaw, streamUpload, PveError, type Method, type Params, type Target } from "./http";
 import { getConfig, DEMO } from "./config";
 import { mockRequest } from "../../shared/mock";
 import type { Call } from "../../shared/types";
@@ -97,4 +97,32 @@ export async function createServiceToken(call: Call) {
   await call("DELETE", `/access/users/${SERVICE_USER}/token/${SERVICE_TOKEN}`).catch(() => {});
   const token = await call("POST", `/access/users/${SERVICE_USER}/token/${SERVICE_TOKEN}`, { privsep: 0, comment: "MyProxmox" });
   return { tokenId: token["full-tokenid"] as string, tokenSecret: token.value as string };
+}
+
+/** Téléchargement brut avec le ticket de la personne connectée (fichiers restaurés...). */
+export async function ticketDownload(ticket: string, path: string, params: Params) {
+  if (DEMO) return { demo: String(mockRequest("GET", path, params)) };
+  return { stream: await requestRaw(target(), path, { Cookie: `PVEAuthCookie=${encodeURIComponent(ticket)}` }, params) };
+}
+
+/** Téléversement vers un stockage, relayé en flux avec le ticket de la personne. */
+export async function ticketUpload(ticket: string, csrf: string, node: string, storage: string, contentType: string, contentLength: string | undefined, body: NodeJS.ReadableStream) {
+  // api: POST /nodes/{node}/storage/{storage}/upload
+  const path = `/nodes/${encodeURIComponent(node)}/storage/${encodeURIComponent(storage)}/upload`;
+  if (DEMO) {
+    // Démo : on lit le flux pour connaître le type, le nom et la taille, sans rien garder
+    let size = 0;
+    let head = "";
+    await new Promise<void>((res, rej) => {
+      body.on("data", (c: Buffer) => { size += c.length; if (head.length < 4096) head += c.toString("latin1"); });
+      body.on("end", () => res());
+      body.on("error", rej);
+    });
+    const content = head.match(/name="content"\r\n\r\n([a-z]+)/)?.[1] ?? "iso";
+    const filename = head.match(/filename="([^"]+)"/)?.[1] ?? "fichier";
+    return mockRequest("POST", path, { content, filename: Buffer.from(filename, "latin1").toString("utf8"), size });
+  }
+  const headers: Record<string, string> = { "Content-Type": contentType, Cookie: `PVEAuthCookie=${encodeURIComponent(ticket)}`, CSRFPreventionToken: csrf };
+  if (contentLength) headers["Content-Length"] = contentLength;
+  return streamUpload(target(), path, headers, body);
 }

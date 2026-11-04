@@ -100,10 +100,39 @@ export interface ActivityEntry {
   detail?: string;
 }
 
+// ── Comptes MyProxmox (locaux, sans compte Proxmox) ──────────────
+/**
+ * Rôles des comptes locaux. Pour en ajouter un, complète LOCAL_ROLES et la règle
+ * d'accès correspondante dans server/src/local-access.ts.
+ */
+export type LocalRole = "monitoring" | "lecture";
+export const LOCAL_ROLES: Record<LocalRole, { label: string; desc: string }> = {
+  monitoring: { label: "Monitoring", desc: "Voit uniquement l'écran de monitoring." },
+  lecture: { label: "Lecture", desc: "Voit toutes les pages, sans pouvoir rien changer." },
+};
+export type LocalStatus = "active" | "pending" | "disabled";
+export type RegistrationMode = "off" | "approval" | "open";
+
+export interface LocalUserInfo {
+  id: string;
+  username: string;
+  displayName: string;
+  role: LocalRole;
+  status: LocalStatus;
+  createdAt: string;
+  lastLogin?: string;
+  totp: boolean;
+}
+
 export interface Me {
   username: string;
   admin: boolean; // Sys.Modify sur "/"
   demo: boolean;
+  kind: "proxmox" | "local";
+  role?: LocalRole; // comptes locaux seulement
+  displayName?: string;
+  readOnly: boolean; // aucune action possible (compte local)
+  totp?: boolean; // compte local : double authentification active
 }
 
 export interface PublicSettings {
@@ -120,4 +149,5 @@ export interface PublicSettings {
   appUrl: string;
   bridgePath: string;
   clientIp: string;
+  registration: RegistrationMode;
 }

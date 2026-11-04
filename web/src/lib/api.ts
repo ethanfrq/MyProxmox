@@ -9,12 +9,32 @@ export class ApiError extends Error {
   }
 }
 
+/** Ajoute au message de Proxmox ce qu'il faut faire, pour les erreurs les plus courantes. */
+const HINTS: [RegExp, string][] = [
+  [/permission check failed|^permission denied|\bno permission\b|\b403\b/i, "Il te manque un droit pour cette action : demande-le à un administrateur (Datacenter > Permissions)."],
+  [/\bis locked\b|\block\b.*\btimeout\b|got timeout/i, "Une autre opération est en cours sur cet élément : attends qu'elle se termine, puis réessaie."],
+  [/already exists|already defined/i, "Choisis un autre nom ou un autre identifiant."],
+  [/not running/i, "Démarre-la d'abord, puis réessaie."],
+  [/no route to host|connection refused|unreachable|is not online|\b595\b/i, "Le nœud ou le service ne répond pas : vérifie qu'il est allumé et joignable."],
+  [/parameter verification failed|property is missing|value does not match/i, "Vérifie les champs du formulaire, puis réessaie."],
+];
+export function explain(status: number, message: string) {
+  if (/[.!?]\s*[A-ZÀ-Ý][^.]*(vérifie|réessaie|demande|attends|choisis|démarre)/i.test(message)) return message; // déjà une consigne
+  const hint = HINTS.find(([re]) => re.test(message))?.[1] ?? (status === 403 ? HINTS[0][1] : status >= 502 && status <= 504 ? "Proxmox a mis trop de temps à répondre. Réessaie dans un instant." : "");
+  return hint ? `${message.replace(/\s+$/, "").replace(/([^.!?])$/, "$1.")} ${hint}` : message;
+}
+
 type Query = Record<string, string | number | boolean | undefined>;
 interface Opts { method?: string; body?: unknown; query?: Query }
 
 export async function api<T = any>(url: string, opts: Opts = {}): Promise<T> {
   const method = opts.method ?? "GET";
-  if (DEMO) return demoApi(method, url, opts.body, opts.query) as Promise<T>;
+  if (DEMO) {
+    try { return (await demoApi(method, url, opts.body, opts.query)) as T; } catch (e) {
+      const status = (e as { status?: number }).status ?? 500;
+      throw new ApiError(status, explain(status, (e as Error).message));
+    }
+  }
   const qs = opts.query
     ? "?" + new URLSearchParams(Object.entries(opts.query).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString()
     : "";
@@ -23,12 +43,12 @@ export async function api<T = any>(url: string, opts: Opts = {}): Promise<T> {
     headers: opts.body !== undefined ? { "Content-Type": "application/json" } : undefined,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     credentials: "same-origin",
-  });
+  }).catch(() => { throw new ApiError(0, "MyProxmox ne répond pas. Vérifie ta connexion et que le serveur MyProxmox tourne, puis réessaie."); });
   const json = await res.json().catch(() => ({}));
   if (res.status === 401 && !url.startsWith("/api/auth") && !url.startsWith("/api/monitoring") && !location.pathname.endsWith("/login")) {
     location.href = `${import.meta.env.BASE_URL}login`.replace("//", "/");
   }
-  if (!res.ok) throw new ApiError(res.status, json.error ?? `Erreur ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, explain(res.status, json.error ?? `Erreur ${res.status}`));
   return json.data as T;
 }
 

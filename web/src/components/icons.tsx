@@ -1,5 +1,5 @@
 // Icônes en traits fins avec angles droits, dessinées pour MyProxmox.
-const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "square" as const, strokeLinejoin: "miter" as const, viewBox: "0 0 24 24" };
+const base = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "square" as const, strokeLinejoin: "miter" as const, viewBox: "0 0 24 24", "aria-hidden": true, focusable: false };
 
 export const I = {
   overview: () => (<svg {...base}><rect x="3" y="3" width="8" height="8" /><rect x="13" y="3" width="8" height="5" /><rect x="13" y="10" width="8" height="11" /><rect x="3" y="13" width="8" height="8" /></svg>),
