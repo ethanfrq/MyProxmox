@@ -8,7 +8,7 @@ const PAGES: [string, string][] = [
   ["/machines/pve/qemu/101", "home-assistant"],
   ["/machines/pve/lxc/100", "pihole"],
   ["/creer", "Créer"],
-  ["/serveur", "Serveur"],
+  ["/serveur", "Nœud"],
   ["/stockage", "Stockage"],
   ["/reseau", "Réseau"],
   ["/sauvegardes", "Sauvegardes"],

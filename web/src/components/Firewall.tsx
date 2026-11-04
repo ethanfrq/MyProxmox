@@ -48,9 +48,9 @@ function ruleParams(v: Values, existing?: Values) {
   return Object.fromEntries(Object.entries(body).filter(([, x]) => x !== undefined));
 }
 
-function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; canEdit: boolean; groupsFw?: string }) {
+export function FirewallRules({ fw, scope, canEdit, groupsFw, rb = `${fw}/rules` }: { fw: string; scope: FwScope; canEdit: boolean; groupsFw?: string; rb?: string }) {
   const { toast } = useToast();
-  const rules = usePoll(() => pve.get<any[]>(`${fw}/rules`), 0, [fw]);
+  const rules = usePoll(() => pve.get<any[]>(`${rb}`), 0, [rb]);
   const groups = usePoll(() => (groupsFw ? pve.get<any[]>(`${groupsFw}/groups`) : Promise.resolve([])), 0, [groupsFw]);
   const [edit, setEdit] = useState<any | "new" | null>(null);
   const [del, setDel] = useState<any | null>(null);
@@ -84,14 +84,14 @@ function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; c
                   onDragOver={(e) => { e.preventDefault(); setOver(r.pos); }}
                   onDragEnd={() => { setDrag(null); setOver(null); }}
                   onDrop={() => {
-                    if (drag !== null && drag !== r.pos) act(() => pve.put(`${fw}/rules/${drag}`, { moveto: r.pos }), "Ordre enregistré");
+                    if (drag !== null && drag !== r.pos) act(() => pve.put(`${rb}/${drag}`, { moveto: r.pos }), "Ordre enregistré");
                     setDrag(null);
                     setOver(null);
                   }}
                   className={`${drag === r.pos ? "dragging" : ""} ${over === r.pos && drag !== r.pos ? "drop-target" : ""} ${r.enable ? "" : "fw-off"}`}
                 >
                   <td className="grip" aria-hidden title="Glisser pour déplacer">⋮⋮</td>
-                  <td><Toggle on={!!r.enable} label={`Activer la règle ${r.pos}`} onChange={(on) => canEdit && act(() => pve.put(`${fw}/rules/${r.pos}`, { enable: on ? 1 : 0 }))} /></td>
+                  <td><Toggle on={!!r.enable} label={`Activer la règle ${r.pos}`} onChange={(on) => canEdit && act(() => pve.put(`${rb}/${r.pos}`, { enable: on ? 1 : 0 }))} /></td>
                   <td className="small">{r.type === "in" ? "Entrant" : r.type === "out" ? "Sortant" : r.type === "group" ? "Groupe" : "Transfert"}</td>
                   <td>{r.type === "group" ? <span className="tag">{r.action}</span> : <span className={`badge ${ACTION_CLASS[r.action] ?? ""}`}>{r.action}</span>}</td>
                   <td className="small mono">{r.macro ?? (r.proto ? `${r.proto}${r.dport ? ` ${r.dport}` : ""}` : "tout")}</td>
@@ -100,7 +100,7 @@ function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; c
                   <td className="small">{r.comment}</td>
                   <td className="actions">
                     <span className="btn-group">
-                      <Button size="sm" disabled={!canEdit || r.pos === 0} aria-label={`Monter la règle ${r.pos}`} onClick={() => act(() => pve.put(`${fw}/rules/${r.pos}`, { moveto: r.pos - 1 }))}>↑</Button>
+                      <Button size="sm" disabled={!canEdit || r.pos === 0} aria-label={`Monter la règle ${r.pos}`} onClick={() => act(() => pve.put(`${rb}/${r.pos}`, { moveto: r.pos - 1 }))}>↑</Button>
                       <Button size="sm" disabled={!canEdit} onClick={() => setEdit(r)}>Modifier</Button>
                       <Button size="sm" variant="danger" icon={<I.trash />} aria-label={`Supprimer la règle ${r.pos}`} disabled={!canEdit} onClick={() => setDel(r)} />
                     </span>
@@ -118,8 +118,8 @@ function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; c
             initial={edit === "new" ? undefined : { ...edit, group: edit.type === "group" ? edit.action : "", enable: !!edit.enable }}
             onCancel={() => setEdit(null)}
             onSubmit={async (_c, v) => {
-              if (edit === "new") await pve.post(`${fw}/rules`, ruleParams(v));
-              else await pve.put(`${fw}/rules/${edit.pos}`, ruleParams(v, edit));
+              if (edit === "new") await pve.post(`${rb}`, ruleParams(v));
+              else await pve.put(`${rb}/${edit.pos}`, ruleParams(v, edit));
               toast("Règle enregistrée", "ok");
               setEdit(null);
               rules.refresh();
@@ -128,7 +128,7 @@ function Rules({ fw, scope, canEdit, groupsFw }: { fw: string; scope: FwScope; c
         </Modal>
       )}
       {del && (
-        <Confirm title="Supprimer cette règle ?" danger confirmLabel="Supprimer" onConfirm={() => act(() => pve.del(`${fw}/rules/${del.pos}`), "Règle supprimée")} onClose={() => setDel(null)}>
+        <Confirm title="Supprimer cette règle ?" danger confirmLabel="Supprimer" onConfirm={() => act(() => pve.del(`${rb}/${del.pos}`), "Règle supprimée")} onClose={() => setDel(null)}>
           <p>{del.type === "group" ? `Groupe ${del.action}` : `${del.action} ${del.macro ?? del.proto ?? ""} ${del.dport ?? ""}`} {del.comment ? `(${del.comment})` : ""}</p>
         </Confirm>
       )}
@@ -339,7 +339,7 @@ export function FirewallPanel({ base: fw, scope, aclPath, priv, extraTabs }: { b
   return (
     <Panel pad={false} title="Pare-feu" right={!allowed && <span className="small muted">Lecture seule : il te manque le droit {priv}</span>}>
       <div style={{ padding: "0 16px" }}><Tabs value={sub} onChange={setSub} tabs={tabs} /></div>
-      {(sub as Sub) === "regles" && <Rules fw={fw} scope={scope} canEdit={allowed} groupsFw={scope === "cluster" ? fw : "/cluster/firewall"} />}
+      {(sub as Sub) === "regles" && <FirewallRules fw={fw} scope={scope} canEdit={allowed} groupsFw={scope === "cluster" ? fw : "/cluster/firewall"} />}
       {(sub as Sub) === "options" && <Options fw={fw} scope={scope} canEdit={allowed} />}
       {(sub as Sub) === "alias" && <Aliases fw={fw} canEdit={allowed} />}
       {(sub as Sub) === "ipsets" && <IpSets fw={fw} canEdit={allowed} />}

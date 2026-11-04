@@ -243,9 +243,9 @@ export function TreePanel() {
       </div>
       <ul className="tree-list" role="tree">
         <li role="treeitem" aria-expanded aria-selected={here === "/"}>
-          <div className={`tree-row ${loc.pathname === "/" ? "active" : ""}`} style={{ paddingLeft: 6 }}>
+          <div className={`tree-row ${loc.pathname.startsWith("/datacenter") ? "active" : ""}`} style={{ paddingLeft: 6 }}>
             <span className="tree-caret" />
-            <button type="button" className="tree-label" onClick={() => navigate("/")}><span className="tree-ico dc" aria-hidden><I.overview /></span><span className="tree-text">Datacenter</span></button>
+            <button type="button" className="tree-label" onClick={() => navigate("/datacenter/resume")}><span className="tree-ico dc" aria-hidden><I.overview /></span><span className="tree-text">Datacenter</span></button>
           </div>
           <ul role="group">
             {tree.map((n) => renderNode(n, 1))}

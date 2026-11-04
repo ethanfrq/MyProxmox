@@ -1,6 +1,7 @@
 // Faux Proxmox : tout ce qui concerne un nœud (alimentation, réseau, DNS, heure, certificats,
 // ACME, mises à jour et dépôts, disques, Ceph, services, journaux, abonnement).
 import { DAY, GB, NODE, NODE2, NODES, S, addTask, fail, now, type Any, type Params } from "./mock-core";
+import { storageCfg } from "./mock-dc";
 
 interface Iface { iface: string; type: string; method?: string; method6?: string; cidr?: string; gateway?: string; autostart?: number; active?: number; bridge_ports?: string; bridge_vlan_aware?: number; slaves?: string; bond_mode?: string; "vlan-raw-device"?: string; "vlan-id"?: number; comments?: string; mtu?: number; exists?: number; ovs_type?: string; ovs_bridge?: string; ovs_ports?: string; cidr6?: string; gateway6?: string }
 interface Disk { devpath: string; model: string; serial: string; size: number; type: string; health: string; wearout: number | string; rpm?: number; used: string; gpt: number }
@@ -352,9 +353,7 @@ export function nodeRoute(method: string, node: string, rest: string[], p: Param
   };
   const addStorage = (id: string, type: string, extra: Record<string, unknown> = {}) => {
     (s.content[id] ??= []);
-    const st2 = s as Any;
-    st2.extraStorages ??= [];
-    st2.extraStorages.push({ storage: id, type, nodes: node, content: type === "dir" ? "images,rootdir,iso,vztmpl,backup" : "images,rootdir", ...extra });
+    storageCfg().push({ storage: id, type, nodes: node, content: type === "dir" ? "images,rootdir,iso,vztmpl,backup" : "images,rootdir", ...extra });
   };
   if (r === "GET /disks/lvm") return { leaf: 0, children: n.lvm.map((v) => ({ name: v.vg, size: v.size, free: v.free, leaf: 0, children: [{ name: v.pvs, size: v.size, free: v.free, leaf: 1 }] })) };
   if (r === "POST /disks/lvm") {
@@ -407,7 +406,7 @@ export function nodeRoute(method: string, node: string, rest: string[], p: Param
     if (rest[1] === "lvm") { const v = n.lvm.find((x) => x.vg === name) ?? fail(404, "groupe introuvable"); if (v!.vg === "pve") fail(500, "volume group 'pve' is used by the system"); free([v!.pvs]); n.lvm = n.lvm.filter((x) => x !== v); }
     if (rest[1] === "lvmthin") { if (name === "data") fail(500, "thin pool 'data' is in use"); n.lvmthin = n.lvmthin.filter((x) => x.lv !== name); const v = n.lvm.find((x) => x.vg === p["volume-group"] || x.vg === name); if (v) { free([v.pvs]); n.lvm = n.lvm.filter((x) => x !== v); } }
     if (rest[1] === "directory") { const d = n.dirs.find((x) => x.path.endsWith(`/${name}`)) ?? fail(404, "dossier introuvable"); free([d!.device.replace(/\d+$/, "")]); n.dirs = n.dirs.filter((x) => x !== d); }
-    if (Number(p["cleanup-config"])) { const st2 = s as Any; st2.extraStorages = (st2.extraStorages ?? []).filter((x: Any) => x.storage !== name); }
+    if (Number(p["cleanup-config"])) { const cfg = storageCfg(); const i = cfg.findIndex((x) => x.storage === name); if (i >= 0) cfg.splice(i, 1); }
     return ok(`${rest[1]}remove`, [`removing ${rest[1]} '${name}'`]);
   }
 

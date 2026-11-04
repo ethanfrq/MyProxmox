@@ -12,15 +12,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 | Zone | Points d'entrée | Fait | À faire | Hors périmètre | Phases |
 |---|--:|--:|--:|--:|---|
-| [Datacenter](#datacenter) | 203 | 33 | 158 | 12 | 3 (lecture sauvegardes), 6 |
-| [Cluster](#cluster) | 60 | 9 | 42 | 9 | 3 (quorum, HA, tâches), 6 |
+| [Datacenter](#datacenter) | 203 | 51 | 140 | 12 | 3 (lecture sauvegardes), 6 |
+| [Cluster](#cluster) | 60 | 14 | 37 | 9 | 3 (quorum, HA, tâches), 6 |
 | [Nœud](#nœud) | 173 | 97 | 54 | 22 | 3 (lecture), 5 |
 | [VM QEMU](#vm-qemu) | 97 | 57 | 33 | 7 | 4 |
 | [Conteneur LXC](#conteneur-lxc) | 62 | 42 | 14 | 6 | 4 |
 | [Stockage](#stockage) | 33 | 7 | 24 | 2 | 3 (occupation), 7 |
 | [Accès](#accès) | 45 | 14 | 28 | 3 | 1 (permissions), 6 |
 | [Pools](#pools) | 7 | 1 | 6 | 0 | 6 |
-| **Total** | **680** | **260** | **359** | **61** | |
+| **Total** | **680** | **283** | **336** | **61** | |
 
 ## Phases
 
@@ -49,7 +49,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Datacenter
 
-203 points d'entrée : 33 faits, 158 à faire, 12 hors périmètre.
+203 points d'entrée : 51 faits, 140 à faire, 12 hors périmètre.
 
 ### Datacenter : acme
 
@@ -100,13 +100,13 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | PUT | `/cluster/firewall/aliases/{name}` | Update IP or Network alias. | Sys.Modify sur / | Fait |
 | DELETE | `/cluster/firewall/aliases/{name}` | Remove IP or Network alias. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/groups` | List security groups. | tout utilisateur connecté | Fait |
-| POST | `/cluster/firewall/groups` | Create new security group. | Sys.Modify sur / | À faire |
-| GET | `/cluster/firewall/groups/{group}` | List rules. | Sys.Audit sur / | À faire |
-| POST | `/cluster/firewall/groups/{group}` | Create new rule. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/groups/{group}` | Delete security group. | Sys.Modify sur / | À faire |
+| POST | `/cluster/firewall/groups` | Create new security group. | Sys.Modify sur / | Fait |
+| GET | `/cluster/firewall/groups/{group}` | List rules. | Sys.Audit sur / | Fait |
+| POST | `/cluster/firewall/groups/{group}` | Create new rule. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/firewall/groups/{group}` | Delete security group. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/groups/{group}/{pos}` | Get single rule data. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/firewall/groups/{group}/{pos}` | Modify rule data. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/firewall/groups/{group}/{pos}` | Delete rule. | Sys.Modify sur / | À faire |
+| PUT | `/cluster/firewall/groups/{group}/{pos}` | Modify rule data. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/firewall/groups/{group}/{pos}` | Delete rule. | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/ipset` | List IPSets | Sys.Audit sur / | Fait |
 | POST | `/cluster/firewall/ipset` | Create new IPSet | Sys.Modify sur / | Fait |
 | GET | `/cluster/firewall/ipset/{name}` | List IPSet content | Sys.Audit sur / | Fait |
@@ -164,11 +164,11 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 |---|---|---|---|---|
 | GET | `/cluster/metrics` | Metrics index. | tout utilisateur connecté | Hors périmètre |
 | GET | `/cluster/metrics/export` | Retrieve metrics of the cluster. | Sys.Audit sur / | À faire |
-| GET | `/cluster/metrics/server` | List configured metric servers. | Sys.Audit sur / | À faire |
+| GET | `/cluster/metrics/server` | List configured metric servers. | Sys.Audit sur / | Fait |
 | GET | `/cluster/metrics/server/{id}` | Read metric server configuration. | Sys.Audit sur / | À faire |
-| POST | `/cluster/metrics/server/{id}` | Create a new external metric server config | Sys.Modify sur / | À faire |
-| PUT | `/cluster/metrics/server/{id}` | Update metric server configuration. | Sys.Modify sur / | À faire |
-| DELETE | `/cluster/metrics/server/{id}` | Remove Metric server. | Sys.Modify sur / | À faire |
+| POST | `/cluster/metrics/server/{id}` | Create a new external metric server config | Sys.Modify sur / | Fait |
+| PUT | `/cluster/metrics/server/{id}` | Update metric server configuration. | Sys.Modify sur / | Fait |
+| DELETE | `/cluster/metrics/server/{id}` | Remove Metric server. | Sys.Modify sur / | Fait |
 
 ### Datacenter : notifications
 
@@ -198,20 +198,20 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | DELETE | `/cluster/notifications/endpoints/webhook/{name}` | Remove webhook endpoint | Mapping.Modify sur /mapping/notifications | À faire |
 | GET | `/cluster/notifications/matcher-field-values` | Returns known notification metadata fields and their known values | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
 | GET | `/cluster/notifications/matcher-fields` | Returns known notification metadata fields | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| GET | `/cluster/notifications/matchers` | Returns a list of all matchers | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/matchers` | Create a new matcher | Mapping.Modify sur /mapping/notifications | À faire |
+| GET | `/cluster/notifications/matchers` | Returns a list of all matchers | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | Fait |
+| POST | `/cluster/notifications/matchers` | Create a new matcher | Mapping.Modify sur /mapping/notifications | Fait |
 | GET | `/cluster/notifications/matchers/{name}` | Return a specific matcher | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications | À faire |
-| PUT | `/cluster/notifications/matchers/{name}` | Update existing matcher | Mapping.Modify sur /mapping/notifications | À faire |
-| DELETE | `/cluster/notifications/matchers/{name}` | Remove matcher | Mapping.Modify sur /mapping/notifications | À faire |
-| GET | `/cluster/notifications/targets` | Returns a list of all entities that can be used as notification targets. | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | À faire |
-| POST | `/cluster/notifications/targets/{name}/test` | Send a test notification to a provided target. | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | À faire |
+| PUT | `/cluster/notifications/matchers/{name}` | Update existing matcher | Mapping.Modify sur /mapping/notifications | Fait |
+| DELETE | `/cluster/notifications/matchers/{name}` | Remove matcher | Mapping.Modify sur /mapping/notifications | Fait |
+| GET | `/cluster/notifications/targets` | Returns a list of all entities that can be used as notification targets. | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | Fait |
+| POST | `/cluster/notifications/targets/{name}/test` | Send a test notification to a provided target. | Mapping.Modify sur /mapping/notifications ou Mapping.Audit sur /mapping/notifications ou Mapping.Use sur /mapping/notifications | Fait |
 
 ### Datacenter : options
 
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
-| GET | `/cluster/options` | Get datacenter options. Without 'Sys.Audit' on '/' not all options are returned. | Sys.Audit sur / | À faire |
-| PUT | `/cluster/options` | Set datacenter options. | Sys.Modify sur / | À faire |
+| GET | `/cluster/options` | Get datacenter options. Without 'Sys.Audit' on '/' not all options are returned. | Sys.Audit sur / | Fait |
+| PUT | `/cluster/options` | Set datacenter options. | Sys.Modify sur / | Fait |
 
 ### Datacenter : qemu
 
@@ -316,7 +316,7 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 
 ## Cluster
 
-60 points d'entrée : 9 faits, 42 à faire, 9 hors périmètre.
+60 points d'entrée : 14 faits, 37 à faire, 9 hors périmètre.
 
 ### Cluster : (racine)
 
@@ -355,15 +355,15 @@ La doc en ligne suit la dernière version de Proxmox VE. Quelques points d'entr�
 | Méthode | Chemin | Description | Permission | MyProxmox |
 |---|---|---|---|---|
 | GET | `/cluster/config` | Directory index. | Sys.Audit sur / | Hors périmètre |
-| POST | `/cluster/config` | Generate new cluster configuration. If no links given, default to local IP address as link0. | non précisée | À faire |
+| POST | `/cluster/config` | Generate new cluster configuration. If no links given, default to local IP address as link0. | non précisée | Fait |
 | GET | `/cluster/config/apiversion` | Return the version of the cluster join API available on this node. | Sys.Audit sur / | Hors périmètre |
-| GET | `/cluster/config/join` | Get information needed to join this cluster over the connected node. | Sys.Audit sur / | À faire |
-| POST | `/cluster/config/join` | Joins this node into an existing cluster. If no links are given, default to IP resolved by node's hostname on single link (fallback fails for clusters with multiple links). | non précisée | À faire |
-| GET | `/cluster/config/nodes` | Corosync node list. | Sys.Audit sur / | À faire |
+| GET | `/cluster/config/join` | Get information needed to join this cluster over the connected node. | Sys.Audit sur / | Fait |
+| POST | `/cluster/config/join` | Joins this node into an existing cluster. If no links are given, default to IP resolved by node's hostname on single link (fallback fails for clusters with multiple links). | non précisée | Fait |
+| GET | `/cluster/config/nodes` | Corosync node list. | Sys.Audit sur / | Fait |
 | POST | `/cluster/config/nodes/{node}` | Adds a node to the cluster configuration. This call is for internal use. | non précisée | Hors périmètre |
 | DELETE | `/cluster/config/nodes/{node}` | Removes a node from the cluster configuration. | non précisée | À faire |
 | GET | `/cluster/config/qdevice` | Get QDevice status | Sys.Audit sur / | À faire |
-| GET | `/cluster/config/totem` | Get corosync totem protocol settings. | Sys.Audit sur / | À faire |
+| GET | `/cluster/config/totem` | Get corosync totem protocol settings. | Sys.Audit sur / | Fait |
 
 ### Cluster : ha
 

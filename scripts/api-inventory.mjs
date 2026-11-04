@@ -58,6 +58,7 @@ const ALIAS_VALUES = {
 const PREFIXES = {
   fw: ["/nodes/${node}/${type}/${vmid}/firewall", "/nodes/${node}/firewall", "/cluster/firewall"],
   groupsFw: "/cluster/firewall",
+  rb: ["/nodes/${node}/${type}/${vmid}/firewall/rules", "/nodes/${node}/firewall/rules", "/cluster/firewall/rules", "/cluster/firewall/groups/${group}"],
   a: "/nodes/${node}/qemu/${vmid}/agent",
   base: "/nodes/${node}/${type}/${vmid}",
   "ctx.base": "/nodes/${node}/${type}/${vmid}",
@@ -249,6 +250,8 @@ function findCalls() {
     [/\bcall\(\s*"(GET|POST|PUT|DELETE)",\s*(`[^`]*`|"[^"]*")/g, (m) => [m[1], m[2]]],
     // Chemin construit à la main (relais WebSocket...) : commentaire « // api: GET /nodes/{node}/... »
     [/\/\/ api: (GET|POST|PUT|DELETE) (\/\S+)/g, (m) => [m[1], `"${m[2].replace(/\{(\w+)\}/g, "${$1}")}"`]],
+    // Listes génériques : <Crud list="/cluster/..."> (lecture)
+    [/\blist=(?:"(\/[^"]+)"|\{`(\/[^`]+)`\})/g, (m) => ["GET", `"${m[1] ?? m[2]}"`]],
     // request(cible, "GET", "/x")
     [/\brequest\([^;\n]*?"(GET|POST|PUT|DELETE)",\s*(`[^`]*`|"[^"]*")/g, (m) => [m[1], m[2]]],
   ];

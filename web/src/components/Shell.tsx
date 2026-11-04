@@ -18,7 +18,8 @@ const NAV: { group: string; items: Item[] }[] = [
     { to: "/creer", label: "Créer", icon: I.plus, write: true },
   ] },
   { group: "Infrastructure", items: [
-    { to: "/serveur", label: "Serveur", icon: I.server },
+    { to: "/datacenter", label: "Datacenter", icon: I.overview },
+    { to: "/serveur", label: "Nœuds", icon: I.server },
     { to: "/stockage", label: "Stockage", icon: I.storage },
     { to: "/reseau", label: "Réseau", icon: I.network },
     { to: "/sauvegardes", label: "Sauvegardes", icon: I.backup, module: "backups" },

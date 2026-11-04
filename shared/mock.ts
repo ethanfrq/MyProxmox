@@ -11,6 +11,7 @@ import { NODE2, NODES, isVolumeKey, sizeOf } from "./mock-core";
 import { guestRoute } from "./mock-guest";
 import { firewallRoute } from "./mock-firewall";
 import { acmeRoute, nodeRoute } from "./mock-node";
+import { dcRoute } from "./mock-dc";
 
 export { resetMock, PVE_PRIVS } from "./mock-core";
 
@@ -21,6 +22,12 @@ export function mockRequest(method: string, path: string, p: Params = {}): Any {
   const s = S();
   const seg = path.split("/").filter(Boolean).map(decodeURIComponent);
   const route = `${method} /${seg.join("/")}`;
+
+  // ── Datacenter : cluster, options, stockage, sauvegardes, accès, pools, HA, SDN... ──
+  if (["cluster", "storage", "access", "pools"].includes(seg[0])) {
+    const dr = dcRoute(method, seg, p);
+    if (dr !== undefined) return dr;
+  }
 
   // ── Accès et utilisateurs ────────────────────────────────────────
   if (route === "GET /version") return { version: "8.4.1", release: "8.4", repoid: "2a5fa54a" };

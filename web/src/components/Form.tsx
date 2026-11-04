@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 export type FieldType =
   | "text" | "number" | "password" | "checkbox" | "select" | "api-select"
-  | "tags" | "disk" | "cidr" | "mac" | "code" | "textarea";
+  | "tags" | "disk" | "cidr" | "mac" | "code" | "textarea" | "multi";
 
 export interface Option { value: string; label: string }
 
@@ -113,6 +113,7 @@ export function cleanValues(fields: FieldDef[], values: Values): Values {
     if (typeof v === "string") v = v.trim();
     if (isEmpty(v)) continue;
     if (f.type === "tags") v = (Array.isArray(v) ? v : String(v).split(/[;,\s]+/)).filter(Boolean).join(";");
+    if (f.type === "multi") v = (Array.isArray(v) ? v : String(v).split(/[,;]/)).filter(Boolean).join(",");
     if (f.type === "number" || f.type === "disk") v = Number(v);
     out[f.name] = v;
   }
@@ -148,6 +149,26 @@ function ApiSelect({ f, value, onChange, id, values }: { f: FieldDef; value: any
       {opts && f.allowEmpty !== undefined && <option value="">{f.allowEmpty}</option>}
       {opts?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
+  );
+}
+
+function MultiCheck({ f, list, onChange, values }: { f: FieldDef; list: string[]; onChange: (v: string[]) => void; values: Values }) {
+  const [opts, setOpts] = useState<Option[] | null>(f.options ?? null);
+  useEffect(() => {
+    if (f.load) f.load(values).then(setOpts).catch(() => setOpts([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.name]);
+  if (!opts) return <span className="muted small">Chargement…</span>;
+  if (!opts.length) return <span className="muted small">Rien à choisir.</span>;
+  return (
+    <div className="multi" role="group" aria-label={f.label}>
+      {opts.map((o) => (
+        <label key={o.value} className="check">
+          <input type="checkbox" disabled={f.readOnly} checked={list.includes(o.value)} onChange={(e) => onChange(e.target.checked ? [...list, o.value] : list.filter((x) => x !== o.value))} />
+          {o.label}
+        </label>
+      ))}
+    </div>
   );
 }
 
@@ -206,6 +227,11 @@ export function FieldInput({ f, value, onChange, values = {} }: { f: FieldDef; v
       return <ApiSelect f={f} value={value} onChange={onChange} id={id} values={values} />;
     case "tags":
       return <Tags value={value} onChange={onChange} id={id} placeholder={f.placeholder} />;
+    case "multi": {
+      // Cases à cocher multiples : options fixes, ou chargées depuis l'API
+      const list: string[] = Array.isArray(value) ? value : String(value ?? "").split(/[,;]/).filter(Boolean);
+      return <MultiCheck f={f} list={list} onChange={onChange} values={values} />;
+    }
     case "code":
     case "textarea":
       return <textarea {...common} className={`input ${f.type === "code" ? "mono" : ""}`} rows={f.rows ?? 5} spellCheck={f.type !== "code"} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />;
@@ -328,7 +354,7 @@ export function displayValue(f: FieldDef, v: any): string {
   if (f.type === "password") return "••••••";
   if (f.type === "checkbox") return v ? "Oui" : "Non";
   if (f.type === "select") return f.options?.find((o) => o.value === String(v))?.label ?? String(v);
-  if (f.type === "tags") return (Array.isArray(v) ? v : String(v).split(/[;,\s]+/)).filter(Boolean).join(", ");
+  if (f.type === "tags" || f.type === "multi") return (Array.isArray(v) ? v : String(v).split(/[;,\s]+/)).filter(Boolean).join(", ");
   if (f.type === "disk") return `${v} Go`;
   if (f.type === "number" && f.unit) return `${v} ${f.unit}`;
   return String(v);

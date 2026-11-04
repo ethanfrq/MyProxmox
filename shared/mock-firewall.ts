@@ -84,6 +84,11 @@ export function firewallRoute(fw: FwStore, method: string, rest: string[], p: Pa
     if (!sub.length) {
       if (method === "GET") return fw.groups.map((g) => ({ group: g.group, comment: g.comment ?? "" }));
       if (method === "POST") {
+        if (p.rename) {
+          const g = fw.groups.find((x) => x.group === p.rename) ?? fail(404, `no such security group '${p.rename}'`);
+          Object.assign(g!, { group: String(p.group), comment: String(p.comment ?? g!.comment ?? "") });
+          return null;
+        }
         if (!/^[A-Za-z][\w-]{1,17}$/.test(String(p.group))) fail(400, "group: invalid format");
         if (fw.groups.some((g) => g.group === p.group)) fail(500, `security group '${p.group}' already exists`);
         fw.groups.push({ group: String(p.group), comment: String(p.comment ?? ""), rules: [] });

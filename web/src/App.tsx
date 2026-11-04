@@ -25,6 +25,7 @@ import { Monitoring } from "./pages/Monitoring";
 import { Register } from "./pages/Register";
 import { Account } from "./pages/Account";
 import { LocalAccounts } from "./pages/LocalAccounts";
+import { Datacenter } from "./pages/Datacenter";
 
 function Protected() {
   const [me, setMe] = useState<Me | null>(null);
@@ -57,6 +58,8 @@ function Protected() {
           <Route path="machines" element={<Machines />} />
           <Route path="machines/:node/:type/:vmid" element={<MachineDetail />} />
           <Route path="creer" element={<Create />} />
+          <Route path="datacenter" element={<Navigate to="/datacenter/resume" replace />} />
+          <Route path="datacenter/:section" element={<Datacenter />} />
           <Route path="serveur" element={<Server />} />
           <Route path="stockage" element={<Storage />} />
           <Route path="reseau" element={<Network />} />
